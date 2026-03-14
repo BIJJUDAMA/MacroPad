@@ -1657,6 +1657,16 @@ dependencies = [
 [[package]]
 name = "script"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "macropad-core",
+ "macropad-ipc",
+ "platform",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
 
 [[package]]
 name = "serde"
