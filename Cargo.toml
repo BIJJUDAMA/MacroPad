@@ -7,5 +7,6 @@ members = [
     "crates/script",
     "crates/launcher",
     "crates/ipc",
+    "gui/src-tauri",
 ]
 resolver = "2"
