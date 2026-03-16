@@ -155,6 +155,33 @@ fn browse_nitsrec(app: tauri::AppHandle) -> Result<Option<String>, String> {
     Ok(path.map(|p| p.to_string()))
 }
 
+#[tauri::command]
+fn load_events(path: String) -> Result<Vec<serde_json::Value>, String> {
+    let p   = PathBuf::from(&path);
+    let rec = macropad_core::load(&p)
+        .map_err(|e| e.to_string())?;
+
+    let events = serde_json::to_value(&rec.events)
+        .map_err(|e| e.to_string())?;
+
+    Ok(events.as_array().cloned().unwrap_or_default())
+}
+
+#[tauri::command]
+fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), String> {
+    let p   = PathBuf::from(&path);
+    let mut rec = macropad_core::load(&p)
+        .map_err(|e| e.to_string())?;
+
+    rec.events = serde_json::from_value(serde_json::Value::Array(events))
+        .map_err(|e| e.to_string())?;
+
+    macropad_core::save(&rec, &p)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -193,6 +220,8 @@ pub fn run() {
             stop_playback,
             get_daemon_status,
             browse_nitsrec,
+            load_events,
+    save_events,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

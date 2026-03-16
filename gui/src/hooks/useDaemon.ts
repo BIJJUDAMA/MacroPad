@@ -29,7 +29,7 @@ export function useDaemonStatus() {
 
 export function useMacroList() {
     const [macros, setMacros] = useState<MacroInfo[]>([])
-    const [paths, setPaths] = useState<string[]>([])
+    const [, setPaths] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 

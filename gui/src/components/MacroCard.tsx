@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { MacroInfo } from "../types/macro"
+import { StepEditor } from "./StepEditor"
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -15,6 +16,7 @@ interface Props {
 export function MacroCard({ macro, onRefresh: _, onRemove }: Props) {
     const [playing, setPlaying] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [showEditor, setShowEditor] = useState(false)
 
     async function handlePlay() {
         setPlaying(true)
@@ -41,50 +43,65 @@ export function MacroCard({ macro, onRefresh: _, onRemove }: Props) {
     }
 
     return (
-        <div style={styles.card}>
-            <div style={styles.header}>
-                <div>
-                    <div style={styles.name}>{macro.name}</div>
-                    <div style={styles.meta}>
-                        {macro.event_count} events · speed {macro.speed}x · loops {macro.loop_count}
-                    </div>
-                    <div style={styles.meta}>created {macro.created}</div>
-                </div>
-                <div style={styles.actions}>
-                    <button
-                        style={{ ...styles.btn, ...styles.btnPlay }}
-                        onClick={handlePlay}
-                        disabled={playing}
-                    >
-                        {playing ? "playing..." : "play"}
-                    </button>
-                    <button
-                        style={{ ...styles.btn, ...styles.btnStop }}
-                        onClick={handleStop}
-                    >
-                        stop
-                    </button>
-                    <button
-                        style={{ ...styles.btn, ...styles.btnRemove }}
-                        onClick={onRemove}
-                    >
-                        remove
-                    </button>
-                </div>
-            </div>
-
-            {macro.tags.length > 0 && (
-                <div style={styles.tags}>
-                    {macro.tags.map(tag => (
-                        <span key={tag} style={styles.tag}>{tag}</span>
-                    ))}
-                </div>
+        <>
+            {showEditor && (
+                <StepEditor
+                    macro={macro}
+                    onClose={() => setShowEditor(false)}
+                />
             )}
 
-            {error && <div style={styles.error}>{error}</div>}
+            <div style={styles.card}>
+                <div style={styles.header}>
+                    <div>
+                        <div style={styles.name}>{macro.name}</div>
+                        <div style={styles.meta}>
+                            {macro.event_count} events · speed {macro.speed}x · loops {macro.loop_count}
+                        </div>
+                        <div style={styles.meta}>created {macro.created}</div>
+                    </div>
+                    <div style={styles.actions}>
+                        <button
+                            style={{ ...styles.btn, ...styles.btnPlay }}
+                            onClick={handlePlay}
+                            disabled={playing}
+                        >
+                            {playing ? "playing..." : "play"}
+                        </button>
+                        <button
+                            style={{ ...styles.btn, ...styles.btnStop }}
+                            onClick={handleStop}
+                        >
+                            stop
+                        </button>
+                        <button
+                            style={{ ...styles.btn, ...styles.btnEdit }}
+                            onClick={() => setShowEditor(true)}
+                        >
+                            edit
+                        </button>
+                        <button
+                            style={{ ...styles.btn, ...styles.btnRemove }}
+                            onClick={onRemove}
+                        >
+                            remove
+                        </button>
+                    </div>
+                </div>
 
-            <div style={styles.path}>{macro.path}</div>
-        </div>
+                {macro.tags.length > 0 && (
+                    <div style={styles.tags}>
+                        {macro.tags.map(tag => (
+                            <span key={tag} style={styles.tag}>{tag}</span>
+                        ))}
+                    </div>
+                )}
+
+                {error && <div style={styles.error}>{error}</div>}
+
+                <div style={styles.path}>{macro.path}</div>
+            </div>
+        </>
     )
 }
 
@@ -132,6 +149,10 @@ const styles: Record<string, React.CSSProperties> = {
     },
     btnStop: {
         background: "#f38ba8",
+        color: "#1e1e2e",
+    },
+    btnEdit: {
+        background: "#89b4fa",
         color: "#1e1e2e",
     },
     btnRemove: {
