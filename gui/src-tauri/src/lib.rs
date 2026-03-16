@@ -182,6 +182,44 @@ fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), Strin
     Ok(())
 }
 
+#[tauri::command]
+fn load_script(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path)
+        .map_err(|e| format!("failed to read {}: {}", path, e))
+}
+
+#[tauri::command]
+fn save_script(path: String, content: String) -> Result<(), String> {
+    std::fs::write(&path, content)
+        .map_err(|e| format!("failed to write {}: {}", path, e))
+}
+
+#[tauri::command]
+fn browse_nitscript(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let path = app
+        .dialog()
+        .file()
+        .add_filter("NitsScript files", &["nitscript"])
+        .blocking_pick_file();
+
+    Ok(path.map(|p| p.to_string()))
+}
+
+#[tauri::command]
+fn new_nitscript(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let path = app
+        .dialog()
+        .file()
+        .add_filter("NitsScript files", &["nitscript"])
+        .blocking_save_file();
+
+    Ok(path.map(|p| p.to_string()))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -221,7 +259,11 @@ pub fn run() {
             get_daemon_status,
             browse_nitsrec,
             load_events,
-    save_events,
+            save_events,
+            load_script,
+            save_script,
+            browse_nitscript,
+            new_nitscript,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

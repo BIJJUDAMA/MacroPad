@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { HumanAction, RawEvent } from "../types/editor"
+import { HumanAction } from "../types/editor"
 
 interface Props {
     action: HumanAction
