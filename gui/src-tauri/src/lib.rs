@@ -1,6 +1,199 @@
+use macropad_ipc::{IpcCommand, IpcResponse};
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use tauri::Manager;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MacroInfo {
+    pub name:        String,
+    pub path:        String,
+    pub tags:        Vec<String>,
+    pub created:     String,
+    pub event_count: usize,
+    pub speed:       f64,
+    pub loop_count:  u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PlaybackResult {
+    pub ok:      bool,
+    pub message: String,
+}
+
+async fn send_ipc(cmd: IpcCommand) -> Result<IpcResponse, String> {
+    let mut json = serde_json::to_string(&cmd)
+        .map_err(|e| e.to_string())?;
+    json.push('\n');
+
+    #[cfg(windows)]
+    {
+        use tokio::net::windows::named_pipe::ClientOptions;
+
+        let mut pipe = ClientOptions::new()
+            .open(macropad_ipc::PIPE_NAME)
+            .map_err(|_| "daemon is not running".to_string())?;
+
+        pipe.write_all(json.as_bytes())
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let mut reader = BufReader::new(&mut pipe);
+        let mut line   = String::new();
+        reader.read_line(&mut line)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        serde_json::from_str::<IpcResponse>(line.trim())
+            .map_err(|e| e.to_string())
+    }
+
+    #[cfg(not(windows))]
+    {
+        use tokio::net::UnixStream;
+
+        let stream = UnixStream::connect(macropad_ipc::SOCKET_PATH)
+            .await
+            .map_err(|_| "daemon is not running".to_string())?;
+
+        let (reader, mut writer) = stream.into_split();
+        writer.write_all(json.as_bytes())
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let mut reader = BufReader::new(reader);
+        let mut line   = String::new();
+        reader.read_line(&mut line)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        serde_json::from_str::<IpcResponse>(line.trim())
+            .map_err(|e| e.to_string())
+    }
+}
+
+fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
+    let p   = PathBuf::from(path);
+    let rec = macropad_core::load(&p)
+        .map_err(|e| format!("failed to load {}: {}", path, e))?;
+
+    Ok(MacroInfo {
+        name:        rec.meta.name,
+        path:        path.to_string(),
+        tags:        rec.meta.tags,
+        created:     rec.meta.created.to_string(),
+        event_count: rec.events.len(),
+        speed:       rec.playback.speed,
+        loop_count:  rec.playback.loop_count,
+    })
+}
+
+#[tauri::command]
+async fn list_macros() -> Result<Vec<String>, String> {
+    match send_ipc(IpcCommand::ListMacros).await? {
+        IpcResponse::Macros { names } => Ok(names),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+fn get_macro_info(path: String) -> Result<MacroInfo, String> {
+    load_macro_info(&path)
+}
+
+#[tauri::command]
+async fn play_macro(
+    path:    String,
+    speed:   Option<f64>,
+    dry_run: bool,
+) -> Result<PlaybackResult, String> {
+    let cmd = IpcCommand::Play {
+        path:    PathBuf::from(&path),
+        speed,
+        dry_run: Some(dry_run),
+    };
+
+    match send_ipc(cmd).await? {
+        IpcResponse::Ok => Ok(PlaybackResult {
+            ok:      true,
+            message: "playback started".into(),
+        }),
+        IpcResponse::Error { message } => Ok(PlaybackResult {
+            ok:      false,
+            message,
+        }),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+async fn stop_playback() -> Result<(), String> {
+    send_ipc(IpcCommand::StopPlayback).await?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_daemon_status() -> Result<String, String> {
+    match send_ipc(IpcCommand::Status).await {
+        Ok(IpcResponse::Status { status, .. }) => Ok(status),
+        Ok(_)  => Ok("unknown".into()),
+        Err(_) => Ok("offline".into()),
+    }
+}
+
+#[tauri::command]
+fn browse_nitsrec(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let path = app
+        .dialog()
+        .file()
+        .add_filter("NitsRec files", &["nitsrec"])
+        .blocking_pick_file();
+
+    Ok(path.map(|p| p.to_string()))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            let exe_dir = app
+                .path()
+                .resource_dir()
+                .ok()
+                .and_then(|_| std::env::current_exe().ok())
+                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                .unwrap_or_default();
+
+            #[cfg(windows)]
+            let daemon_bin = exe_dir.join("daemon.exe");
+            #[cfg(not(windows))]
+            let daemon_bin = exe_dir.join("daemon");
+
+            std::thread::spawn(move || {
+                if daemon_bin.exists() {
+                    println!("[gui] starting daemon from {:?}", daemon_bin);
+                    let _ = std::process::Command::new(&daemon_bin).spawn();
+                } else {
+                    // fallback for dev — daemon binary in PATH
+                    println!("[gui] daemon binary not found at {:?}, trying PATH", daemon_bin);
+                    let _ = std::process::Command::new("daemon").spawn();
+                }
+            });
+
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            list_macros,
+            get_macro_info,
+            play_macro,
+            stop_playback,
+            get_daemon_status,
+            browse_nitsrec,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

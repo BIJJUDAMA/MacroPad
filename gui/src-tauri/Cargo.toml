@@ -16,6 +16,7 @@ macropad-core = { path = "../../crates/core" }
 macropad-ipc  = { path = "../../crates/ipc" }
 platform      = { path = "../../crates/platform" }
 script        = { path = "../../crates/script" }
+tauri-plugin-dialog = "2.6.0"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

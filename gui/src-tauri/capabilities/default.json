@@ -1,9 +1,10 @@
 {
   "": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default permissions for the app",
+  "description": "Default permissions",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:default"
   ]
 }
