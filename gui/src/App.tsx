@@ -4,8 +4,14 @@ import { ScriptEditor } from './components/ScriptEditor'
 
 type Tab = 'library' | 'script'
 
+export interface MacroLibraryState {
+  paths: string[]
+  setPaths: (paths: string[]) => void
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>('library')
+  const [paths, setPaths] = useState<string[]>([])
 
   return (
     <div style={{ fontFamily: 'monospace', background: '#181825', minHeight: '100vh' }}>
@@ -21,14 +27,14 @@ function App() {
             key={t}
             onClick={() => setTab(t)}
             style={{
-              background:   tab === t ? '#313244' : 'transparent',
-              color:        tab === t ? '#cdd6f4'  : '#6c7086',
-              border:       'none',
+              background: tab === t ? '#313244' : 'transparent',
+              color: tab === t ? '#cdd6f4' : '#6c7086',
+              border: 'none',
               borderRadius: 6,
-              padding:      '6px 16px',
-              fontSize:     13,
-              cursor:       'pointer',
-              fontFamily:   'monospace',
+              padding: '6px 16px',
+              fontSize: 13,
+              cursor: 'pointer',
+              fontFamily: 'monospace',
             }}
           >
             {t}
@@ -36,8 +42,12 @@ function App() {
         ))}
       </div>
 
-      {tab === 'library' && <LibraryBrowser />}
-      {tab === 'script'  && <ScriptEditor />}
+      {tab === 'library' && (
+        <LibraryBrowser paths={paths} setPaths={setPaths} />
+      )}
+      {tab === 'script' && (
+        <ScriptEditor libraryPaths={paths} />
+      )}
     </div>
   )
 }

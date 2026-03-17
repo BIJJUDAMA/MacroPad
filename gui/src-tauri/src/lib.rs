@@ -99,6 +99,9 @@ async fn list_macros() -> Result<Vec<String>, String> {
 
 #[tauri::command]
 fn get_macro_info(path: String) -> Result<MacroInfo, String> {
+    if !path.ends_with(".nitsrec") {
+        return Err(format!("expected a .nitsrec file, got: {}", path));
+    }
     load_macro_info(&path)
 }
 
@@ -184,6 +187,9 @@ fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), Strin
 
 #[tauri::command]
 fn load_script(path: String) -> Result<String, String> {
+    if !path.ends_with(".nitscript") {
+        return Err(format!("expected a .nitscript file, got: {}", path));
+    }
     std::fs::read_to_string(&path)
         .map_err(|e| format!("failed to read {}: {}", path, e))
 }
@@ -218,6 +224,31 @@ fn new_nitscript(app: tauri::AppHandle) -> Result<Option<String>, String> {
         .blocking_save_file();
 
     Ok(path.map(|p| p.to_string()))
+}
+
+#[tauri::command]
+fn duplicate_file(path: String) -> Result<String, String> {
+    let src  = std::path::PathBuf::from(&path);
+    let stem = src.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("macro");
+    let ext  = src.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("nitsrec");
+    let parent = src.parent().unwrap_or(std::path::Path::new("."));
+
+    let mut i = 1;
+    let dest = loop {
+        let name = format!("{}_{}.{}", stem, i, ext);
+        let candidate = parent.join(&name);
+        if !candidate.exists() { break candidate; }
+        i += 1;
+    };
+
+    std::fs::copy(&src, &dest)
+        .map_err(|e| e.to_string())?;
+
+    Ok(dest.to_string_lossy().to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -264,6 +295,7 @@ pub fn run() {
             save_script,
             browse_nitscript,
             new_nitscript,
+            duplicate_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -59,7 +59,11 @@ function blocksToSource(blocks: BlockStatement[]): string {
     return blocks.map(b => render(b, 0)).join("\n")
 }
 
-export function ScriptEditor() {
+interface ScriptEditorProps {
+    libraryPaths: string[]
+}
+
+export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
     const [path, setPath] = useState<string | null>(null)
     const [source, setSource] = useState("# write your .nitscript here\n")
     const [blocks, setBlocks] = useState<BlockStatement[]>([])

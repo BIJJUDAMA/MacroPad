@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { DaemonStatus, MacroInfo } from "../types/macro"
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -27,66 +27,68 @@ export function useDaemonStatus() {
     return { status, refresh }
 }
 
-export function useMacroList() {
+export function useMacroList(
+    paths: string[],
+    setPaths: (paths: string[]) => void,
+) {
     const [macros, setMacros] = useState<MacroInfo[]>([])
-    const [, setPaths] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const pathsRef = useRef<string[]>(paths)
 
-    const loadInfo = useCallback(async (path: string): Promise<MacroInfo | null> => {
-        try {
-            const info = await tauriInvoke<MacroInfo>("get_macro_info", { path })
-            return info
-        } catch (e) {
-            console.error("failed to load macro info for", path, e)
-            return null
-        }
-    }, [])
+    useEffect(() => {
+        pathsRef.current = paths
+    }, [paths])
 
-    const refresh = useCallback(async () => {
-        setLoading(true)
-        setError(null)
-        try {
-            setPaths(prev => {
-                loadInfosForPaths(prev)
-                return prev
-            })
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    async function loadInfosForPaths(pathList: string[]) {
-        setLoading(true)
-        const results = await Promise.all(pathList.map(p => loadInfo(p)))
-        const valid = results.filter((m): m is MacroInfo => m !== null)
-        setMacros(valid)
-        setLoading(false)
-    }
-
-    const addMacro = useCallback(async (path: string) => {
-        console.log("addMacro called with path:", path)
-        const info = await loadInfo(path)
-        console.log("loaded info:", info)
-        if (!info) {
-            setError(`could not load file: ${path}`)
+    const loadInfosForPaths = useCallback(async (pathList: string[]) => {
+        if (pathList.length === 0) {
+            setMacros([])
             return
         }
-        setPaths(prev => {
-            if (prev.includes(path)) return prev
-            const next = [...prev, path]
-            loadInfosForPaths(next)
-            return next
-        })
-    }, [loadInfo])
-
-    const removeMacro = useCallback((path: string) => {
-        setPaths(prev => {
-            const next = prev.filter(p => p !== path)
-            loadInfosForPaths(next)
-            return next
-        })
+        setLoading(true)
+        setError(null)
+        const results = await Promise.all(
+            pathList.map(async path => {
+                try {
+                    return await tauriInvoke<MacroInfo>("get_macro_info", { path })
+                } catch (e) {
+                    console.error("failed to load:", path, e)
+                    return null
+                }
+            })
+        )
+        setMacros(results.filter((m): m is MacroInfo => m !== null))
+        setLoading(false)
     }, [])
 
-    return { macros, loading, error, refresh, addMacro, removeMacro }
+    useEffect(() => {
+        loadInfosForPaths(paths)
+    }, [paths, loadInfosForPaths])
+
+    const refresh = useCallback(() => {
+        loadInfosForPaths(pathsRef.current)
+    }, [loadInfosForPaths])
+
+    const addMacro = useCallback(async (path: string) => {
+        if (pathsRef.current.includes(path)) return
+        const next = [...pathsRef.current, path]
+        setPaths(next)
+    }, [setPaths])
+
+    const removeMacro = useCallback((path: string) => {
+        const next = pathsRef.current.filter(p => p !== path)
+        setPaths(next)
+    }, [setPaths])
+
+    const duplicateMacro = useCallback(async (path: string) => {
+        try {
+            const newPath = await tauriInvoke<string>("duplicate_file", { path })
+            const next = [...pathsRef.current, newPath]
+            setPaths(next)
+        } catch (e) {
+            console.error("duplicate failed:", e)
+        }
+    }, [setPaths])
+
+    return { macros, loading, error, refresh, addMacro, removeMacro, duplicateMacro }
 }
