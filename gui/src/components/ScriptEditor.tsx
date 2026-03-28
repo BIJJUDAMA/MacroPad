@@ -52,6 +52,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
     const [error, setError] = useState<string | null>(null)
     const [running, setRunning] = useState(false)
     const [logLines, setLogLines] = useState<string[]>([])
+    const [runtimeVars, setRuntimeVars] = useState<{key: string, value: string}[]>([])
     
     const viewContainerRef = useRef<HTMLDivElement>(null)
 
@@ -144,7 +145,15 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
                 await new Promise(r => setTimeout(r, 300))
             }
 
-            const lines = await tauriInvoke<string[]>("run_script_file", { path, dryRun })
+            const varObj: Record<string, string> = {}
+            for (const v of runtimeVars) {
+                if (v.key.trim() !== "") {
+                    varObj[v.key.trim()] = v.value
+                }
+            }
+            const vars = Object.keys(varObj).length > 0 ? varObj : null
+
+            const lines = await tauriInvoke<string[]>("run_script_file", { path, dryRun, vars })
             setLogLines(prev => [...prev, ...lines])
 
             if (!dryRun) {
@@ -284,6 +293,49 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
                         ) : (
                             <BlockEditor blocks={blocks} onChange={setBlocks} scriptDir={scriptDir} />
                         )}
+                    </div>
+                    {/* Runtime Variables Bar */}
+                    <div className="flex items-center gap-4 px-6 py-2 bg-surface/50 border-b border-surface-lighter shrink-0 overflow-x-auto custom-scrollbar">
+                        <span className="text-xs font-bold text-tertiary uppercase tracking-wider shrink-0">Runtime Vars:</span>
+                        {runtimeVars.map((v, i) => (
+                            <div key={i} className="flex items-center gap-0 bg-neutral border border-surface-lighter rounded-md overflow-hidden shrink-0 shadow-inner">
+                                <input
+                                    type="text"
+                                    value={v.key}
+                                    onChange={e => {
+                                        const newVars = [...runtimeVars]
+                                        newVars[i].key = e.target.value
+                                        setRuntimeVars(newVars)
+                                    }}
+                                    placeholder="Var Name"
+                                    className="w-24 px-2 py-1 text-xs font-mono bg-transparent text-secondary focus:outline-none placeholder-surface-lighter/50 border-r border-surface-lighter"
+                                />
+                                <input
+                                    type="text"
+                                    value={v.value}
+                                    onChange={e => {
+                                        const newVars = [...runtimeVars]
+                                        newVars[i].value = e.target.value
+                                        setRuntimeVars(newVars)
+                                    }}
+                                    placeholder="Value"
+                                    className="w-32 px-2 py-1 text-xs font-mono bg-transparent text-gray-300 focus:outline-none placeholder-surface-lighter/50"
+                                />
+                                <button
+                                    onClick={() => setRuntimeVars(runtimeVars.filter((_, idx) => idx !== i))}
+                                    className="px-2 py-1 text-tertiary hover:text-red-400 bg-surface/30 hover:bg-red-950/20 transition-colors border-l border-surface-lighter"
+                                    title="Remove Variable"
+                                >
+                                    &times;
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => setRuntimeVars([...runtimeVars, { key: "", value: "" }])}
+                            className="px-3 py-1 bg-surface border border-surface-lighter rounded-md text-xs text-secondary hover:text-primary hover:border-primary/30 transition-colors flex items-center gap-1 font-mono shrink-0 shadow-[0_0_10px_rgba(137,207,240,0.05)]"
+                        >
+                            + Add Var
+                        </button>
                     </div>
                     {/* Log Panel at Bottom */}
                     <div className="h-1/3 min-h-[150px] shrink-0">

@@ -201,6 +201,23 @@ fn save_script(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn run_script_file(
+    path: String,
+    dry_run: bool,
+    vars: Option<std::collections::HashMap<String, String>>,
+) -> Result<Vec<String>, String> {
+    if !path.ends_with(".nitscript") {
+        return Err(format!("expected a .nitscript file, got: {}", path));
+    }
+
+    let p = PathBuf::from(&path);
+    match script::run_script(&p, dry_run, vars).await {
+        Ok(_) => Ok(vec!["script executed successfully".into()]),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
 fn browse_nitscript(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
@@ -293,6 +310,7 @@ pub fn run() {
             save_events,
             load_script,
             save_script,
+            run_script_file,
             browse_nitscript,
             new_nitscript,
             duplicate_file,

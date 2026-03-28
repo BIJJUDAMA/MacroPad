@@ -21,7 +21,11 @@ pub enum ScriptError {
     Runtime(#[from] RunnerError),
 }
 
-pub async fn run_script(path: &Path, dry_run: bool) -> Result<(), ScriptError> {
+pub async fn run_script(
+    path: &Path,
+    dry_run: bool,
+    vars: Option<std::collections::HashMap<String, String>>,
+) -> Result<(), ScriptError> {
     let source  = std::fs::read_to_string(path)?;
     let mut lexer  = Lexer::new(&source);
     let tokens  = lexer.tokenize().map_err(ParseError::Lex)?;
@@ -29,6 +33,12 @@ pub async fn run_script(path: &Path, dry_run: bool) -> Result<(), ScriptError> {
     let script  = parser.parse()?;
     let runner  = Runner::new(path, dry_run);
     let mut scope  = Scope::new();
+
+    if let Some(map) = vars {
+        for (k, v) in map {
+            scope.set(&k, &v);
+        }
+    }
 
     runner.run(&script, &mut scope).await?;
     Ok(())

@@ -32,7 +32,7 @@ impl Player {
     }
 }
 
-fn get_screen_resolution() -> (u32, u32) {
+pub fn get_screen_resolution() -> (u32, u32) {
     #[cfg(windows)]
     {
         use winapi::um::winuser::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
