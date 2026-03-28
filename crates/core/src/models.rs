@@ -12,10 +12,12 @@ pub struct NitsRec {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metadata {
-    pub version: u32,
-    pub name:    String,
-    pub created: NaiveDate,
-    pub tags:    Vec<String>,
+    pub version:  u32,
+    pub name:     String,
+    pub created:  NaiveDate,
+    pub tags:     Vec<String>,
+    #[serde(default)]
+    pub requires: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

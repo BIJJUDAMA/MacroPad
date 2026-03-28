@@ -221,6 +221,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                                 .into(),
                             created: chrono::Local::now().date_naive(),
                             tags:    vec![],
+                            requires: vec![],
                         },
                         playback: macropad_core::models::PlaybackConfig {
                             recorded_resolution: {
