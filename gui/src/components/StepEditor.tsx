@@ -54,11 +54,39 @@ function groupEvents(events: RawEvent[]): HumanAction[] {
             continue
         }
 
+        if (e.type === "mouse_segment") {
+            const fromX = e.x ?? 0
+            const fromY = e.y ?? 0
+            const toX = e.delta_x ?? 0
+            const toY = e.delta_y ?? 0
+            actions.push({
+                id: `seg-${i}`,
+                label: "Move mouse",
+                detail: `(${fromX}, ${fromY}) → (${toX}, ${toY})  ${e.duration_ms}ms`,
+                raw_events: [e],
+            })
+            i++
+            continue
+        }
+
         if (e.type === "mouse_move") {
             actions.push({
                 id: `move-${i}`,
                 label: "Move mouse",
                 detail: `to (${e.x}, ${e.y})`,
+                raw_events: [e],
+            })
+            i++
+            continue
+        }
+
+        if (e.type === "scroll") {
+            const dir = (e.delta_y ?? 0) > 0 ? "down" : "up"
+            const ticks = Math.abs(e.delta_y ?? e.delta_x ?? 1)
+            actions.push({
+                id: `scroll-${i}`,
+                label: `Scroll ${dir}`,
+                detail: `${ticks} tick${ticks !== 1 ? "s" : ""}`,
                 raw_events: [e],
             })
             i++
@@ -98,7 +126,6 @@ function groupEvents(events: RawEvent[]): HumanAction[] {
                 raw.push(events[j])
                 j++
             }
-
             while (j < events.length && events[j].type === "key_up") {
                 raw.push(events[j])
                 j++
@@ -198,29 +225,16 @@ export function StepEditor({ macro, onClose }: Props) {
                             <button
                                 style={{ ...styles.toggleBtn, ...(view === "human" ? styles.toggleActive : {}) }}
                                 onClick={() => setView("human")}
-                            >
-                                human
-                            </button>
+                            >human</button>
                             <button
                                 style={{ ...styles.toggleBtn, ...(view === "raw" ? styles.toggleActive : {}) }}
                                 onClick={() => setView("raw")}
-                            >
-                                raw
-                            </button>
+                            >raw</button>
                         </div>
-                        <button
-                            style={{ ...styles.btn, ...styles.btnSave }}
-                            onClick={handleSave}
-                            disabled={saving}
-                        >
+                        <button style={{ ...styles.btn, ...styles.btnSave }} onClick={handleSave} disabled={saving}>
                             {saving ? "saving..." : saved ? "saved!" : "save"}
                         </button>
-                        <button
-                            style={{ ...styles.btn, ...styles.btnClose }}
-                            onClick={onClose}
-                        >
-                            close
-                        </button>
+                        <button style={{ ...styles.btn, ...styles.btnClose }} onClick={onClose}>close</button>
                     </div>
                 </div>
 
@@ -255,9 +269,7 @@ export function StepEditor({ macro, onClose }: Props) {
                                 <button
                                     style={styles.rawDelete}
                                     onClick={() => setEvents(prev => prev.filter((_, idx) => idx !== i))}
-                                >
-                                    ✕
-                                </button>
+                                >✕</button>
                             </div>
                         ))}
                     </div>
@@ -268,139 +280,25 @@ export function StepEditor({ macro, onClose }: Props) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-    overlay: {
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-    },
-    panel: {
-        background: "#1e1e2e",
-        border: "1px solid #313244",
-        borderRadius: 12,
-        width: "80vw",
-        maxWidth: 900,
-        maxHeight: "80vh",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "monospace",
-    },
-    header: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "20px 24px",
-        borderBottom: "1px solid #313244",
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: 600,
-        color: "#cdd6f4",
-    },
-    subtitle: {
-        fontSize: 12,
-        color: "#6c7086",
-        marginTop: 4,
-    },
-    headerRight: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-    },
-    toggle: {
-        display: "flex",
-        background: "#181825",
-        borderRadius: 6,
-        padding: 2,
-        gap: 2,
-    },
-    toggleBtn: {
-        background: "transparent",
-        border: "none",
-        borderRadius: 4,
-        padding: "5px 14px",
-        fontSize: 12,
-        color: "#6c7086",
-        cursor: "pointer",
-        fontFamily: "monospace",
-    },
-    toggleActive: {
-        background: "#313244",
-        color: "#cdd6f4",
-    },
-    btn: {
-        padding: "6px 14px",
-        borderRadius: 6,
-        border: "none",
-        cursor: "pointer",
-        fontSize: 12,
-        fontFamily: "monospace",
-        fontWeight: 500,
-    },
-    btnSave: {
-        background: "#a6e3a1",
-        color: "#1e1e2e",
-    },
-    btnClose: {
-        background: "#313244",
-        color: "#cdd6f4",
-    },
-    list: {
-        padding: "16px 24px",
-        overflowY: "auto",
-        flex: 1,
-    },
-    state: {
-        textAlign: "center",
-        color: "#6c7086",
-        fontSize: 14,
-        padding: 60,
-    },
-    error: {
-        margin: "12px 24px 0",
-        background: "#2a1a1e",
-        border: "1px solid #f38ba8",
-        borderRadius: 6,
-        padding: "8px 12px",
-        color: "#f38ba8",
-        fontSize: 12,
-    },
-    rawRow: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "6px 8px",
-        borderRadius: 4,
-        marginBottom: 4,
-        background: "#181825",
-        fontSize: 12,
-    },
-    rawIndex: {
-        color: "#45475a",
-        minWidth: 28,
-        textAlign: "right",
-    },
-    rawTime: {
-        color: "#45475a",
-        minWidth: 70,
-    },
-    rawType: {
-        color: "#89b4fa",
-        minWidth: 120,
-    },
-    rawDetail: {
-        color: "#cdd6f4",
-        flex: 1,
-    },
-    rawDelete: {
-        background: "transparent",
-        border: "none",
-        color: "#f38ba8",
-        cursor: "pointer",
-        fontSize: 12,
-        padding: "0 4px",
-    },
+    overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 },
+    panel: { background: "#1e1e2e", border: "1px solid #313244", borderRadius: 12, width: "80vw", maxWidth: 900, maxHeight: "80vh", display: "flex", flexDirection: "column", fontFamily: "monospace" },
+    header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid #313244" },
+    title: { fontSize: 18, fontWeight: 600, color: "#cdd6f4" },
+    subtitle: { fontSize: 12, color: "#6c7086", marginTop: 4 },
+    headerRight: { display: "flex", alignItems: "center", gap: 10 },
+    toggle: { display: "flex", background: "#181825", borderRadius: 6, padding: 2, gap: 2 },
+    toggleBtn: { background: "transparent", border: "none", borderRadius: 4, padding: "5px 14px", fontSize: 12, color: "#6c7086", cursor: "pointer", fontFamily: "monospace" },
+    toggleActive: { background: "#313244", color: "#cdd6f4" },
+    btn: { padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontFamily: "monospace", fontWeight: 500 },
+    btnSave: { background: "#a6e3a1", color: "#1e1e2e" },
+    btnClose: { background: "#313244", color: "#cdd6f4" },
+    list: { padding: "16px 24px", overflowY: "auto", flex: 1 },
+    state: { textAlign: "center", color: "#6c7086", fontSize: 14, padding: 60 },
+    error: { margin: "12px 24px 0", background: "#2a1a1e", border: "1px solid #f38ba8", borderRadius: 6, padding: "8px 12px", color: "#f38ba8", fontSize: 12 },
+    rawRow: { display: "flex", alignItems: "center", gap: 12, padding: "6px 8px", borderRadius: 4, marginBottom: 4, background: "#181825", fontSize: 12 },
+    rawIndex: { color: "#45475a", minWidth: 28, textAlign: "right" },
+    rawTime: { color: "#45475a", minWidth: 70 },
+    rawType: { color: "#89b4fa", minWidth: 120 },
+    rawDetail: { color: "#cdd6f4", flex: 1 },
+    rawDelete: { background: "transparent", border: "none", color: "#f38ba8", cursor: "pointer", fontSize: 12, padding: "0 4px" },
 }

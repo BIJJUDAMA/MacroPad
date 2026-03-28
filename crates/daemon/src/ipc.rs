@@ -3,6 +3,7 @@ use macropad_ipc::{IpcCommand, IpcResponse};
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::oneshot;
+use macropad_core::recorder::consolidate_mouse_segments;
 
 #[cfg(windows)]
 use macropad_ipc::PIPE_NAME;
@@ -193,23 +194,27 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                             }
                         }
 
-                        println!("[daemon] recording stopped, {} events captured", events.len());
+                       println!("[daemon] recording stopped, {} events captured", events.len());
 
-                        let rec = macropad_core::models::NitsRec {
-                            meta: macropad_core::models::Metadata {
-                                version: 1,
-                                name:    output_path
-                                    .file_stem()
-                                    .and_then(|n| n.to_str())
-                                    .unwrap_or("recording")
-                                    .into(),
-                                created: chrono::Local::now().date_naive(),
-                                tags:    vec![],
-                            },
-                            playback: macropad_core::models::PlaybackConfig::default(),
-                            vars:     None,
-                            events,
-                        };
+                    // consolidate raw mouse moves into segments
+                    let events = consolidate_mouse_segments(&events);
+                    println!("[daemon] after consolidation: {} events", events.len());
+
+                    let rec = macropad_core::models::NitsRec {
+                        meta: macropad_core::models::Metadata {
+                            version: 1,
+                            name:    output_path
+                                .file_stem()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("recording")
+                                .into(),
+                            created: chrono::Local::now().date_naive(),
+                            tags:    vec![],
+                        },
+                        playback: macropad_core::models::PlaybackConfig::default(),
+                        vars:     None,
+                        events,
+                    };
 
                         if let Err(e) = macropad_core::save(&rec, &output_path) {
                             eprintln!("[daemon] save error: {}", e);

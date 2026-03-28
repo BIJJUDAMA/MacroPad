@@ -12,3 +12,6 @@ tokio       = { version = "1", features = ["full"] }
 thiserror   = "1"
 chrono      = { version = "0.4", features = ["serde"] }
 serde_json  = "1"
+
+[target.x86_64-pc-windows-msvc.dependencies]
+winapi = { version = "0.3.9", features = ["winuser"] }

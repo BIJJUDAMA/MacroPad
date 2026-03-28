@@ -9,6 +9,7 @@ export interface RawEvent {
     delta_y?: number
     duration_ms?: number
     value?: string
+    waypoints?: [number, number][]
 }
 
 export interface HumanAction {
