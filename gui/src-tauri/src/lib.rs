@@ -1,7 +1,13 @@
 use macropad_ipc::{IpcCommand, IpcResponse};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use tauri::Manager;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use tauri::{Manager, State};
+
+pub struct ConfigState {
+    pub config: Mutex<macropad_core::models::AppConfig>,
+    pub path: PathBuf,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MacroInfo {
@@ -63,14 +69,20 @@ fn get_macro_info(path: String) -> Result<MacroInfo, String> {
 
 #[tauri::command]
 async fn play_macro(
+    state:   State<'_, ConfigState>,
     path:    String,
     speed:   Option<f64>,
     dry_run: bool,
     vars:    Option<std::collections::HashMap<String, String>>,
 ) -> Result<PlaybackResult, String> {
+    // Use global default speed if not specified
+    let effective_speed = speed.or_else(|| {
+        state.config.lock().ok().map(|c| c.playback_defaults.speed)
+    });
+
     let cmd = IpcCommand::Play {
         path:      PathBuf::from(&path),
-        speed,
+        speed:     effective_speed,
         dry_run:   Some(dry_run),
         vars,
         overrides: None,
@@ -85,6 +97,64 @@ async fn play_macro(
             ok:      false,
             message,
         }),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+fn get_app_config(state: State<'_, ConfigState>) -> Result<macropad_core::models::AppConfig, String> {
+    let config = state.config.lock().map_err(|e| e.to_string())?;
+    Ok(config.clone())
+}
+
+#[tauri::command]
+fn update_app_config(
+    state: State<'_, ConfigState>,
+    config: macropad_core::models::AppConfig,
+) -> Result<(), String> {
+    let mut current = state.config.lock().map_err(|e| e.to_string())?;
+    *current = config;
+    macropad_core::storage::save_config(&current, &state.path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn save_as_nitsrec(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let path = app
+        .dialog()
+        .file()
+        .add_filter("NitsRec files", &["nitsrec"])
+        .blocking_save_file();
+    Ok(path.map(|p| p.to_string()))
+}
+
+#[tauri::command]
+async fn start_record(
+    state: State<'_, ConfigState>,
+    output_path: String,
+) -> Result<(), String> {
+    let options = {
+        let config = state.config.lock().map_err(|e| e.to_string())?;
+        config.recording_defaults.clone()
+    };
+
+    let cmd = IpcCommand::Record {
+        output_path: PathBuf::from(output_path),
+        options: Some(options),
+    };
+    match send_ipc(cmd).await? {
+        IpcResponse::Ok => Ok(()),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+async fn stop_record() -> Result<(), String> {
+    match send_ipc(IpcCommand::StopRecord).await? {
+        IpcResponse::Ok => Ok(()),
+        IpcResponse::Error { message } => Err(message),
         _ => Err("unexpected response".into()),
     }
 }
@@ -285,6 +355,15 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            let config_dir = app.path().app_config_dir().unwrap_or_else(|_| PathBuf::from("."));
+            let config_path = config_dir.join("settings.toml");
+            let config = macropad_core::storage::load_config(&config_path).unwrap_or_default();
+            
+            app.manage(ConfigState {
+                config: Mutex::new(config),
+                path: config_path,
+            });
+
             let exe_dir = app
                 .path()
                 .resource_dir()
@@ -329,6 +408,11 @@ pub fn run() {
             list_macro_history,
             restore_macro_version,
             wrap_macro_in_script,
+            get_app_config,
+            update_app_config,
+            save_as_nitsrec,
+            start_record,
+            stop_record,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

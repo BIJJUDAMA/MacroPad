@@ -2558,6 +2558,7 @@ dependencies = [
 name = "macropad-ipc"
 version = "0.1.0"
 dependencies = [
+ "macropad-core",
  "serde",
  "serde_json",
  "thiserror 1.0.69",

@@ -1,13 +1,43 @@
 @import "tailwindcss";
 
+:root {
+  --primary: #FF5F1F;
+  --secondary: #89CFF0;
+  --tertiary: #71797E;
+  --neutral: #0A0A0A;
+  --surface: #16161a;
+  --surface-light: #202025;
+  --surface-lighter: #2e2e33;
+}
+
+.theme-slate {
+  --primary: #3b82f6;
+  --secondary: #a5b4fc;
+  --tertiary: #64748b;
+  --neutral: #0f172a;
+  --surface: #1e293b;
+  --surface-light: #334155;
+  --surface-lighter: #475569;
+}
+
+.theme-classic {
+  --primary: #ffffff;
+  --secondary: #cccccc;
+  --tertiary: #999999;
+  --neutral: #000000;
+  --surface: #111111;
+  --surface-light: #222222;
+  --surface-lighter: #333333;
+}
+
 @theme {
-  --color-primary: #FF5F1F;
-  --color-secondary: #89CFF0;
-  --color-tertiary: #71797E;
-  --color-neutral: #0A0A0A;
-  --color-surface: #16161a;
-  --color-surface-light: #202025;
-  --color-surface-lighter: #2e2e33;
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --color-neutral: var(--neutral);
+  --color-surface: var(--surface);
+  --color-surface-light: var(--surface-light);
+  --color-surface-lighter: var(--surface-lighter);
 }
 
 @layer base {
@@ -16,13 +46,11 @@
     margin: 0;
   }
   
-  /* Reset button styles a bit more for the custom look */
   button {
     @apply focus:outline-none transition-colors duration-200;
   }
 }
 
-/* Custom Scrollbar for the sleek terminal feel */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -31,9 +59,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-lighter);
+  background: var(--surface-lighter);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-tertiary);
+  background: var(--tertiary);
 }

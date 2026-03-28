@@ -3,6 +3,7 @@ pub mod client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use macropad_core::models::RecordingOptions;
 use thiserror::Error;
 
 #[cfg(windows)]
@@ -51,6 +52,7 @@ pub enum IpcCommand {
     },
     Record {
         output_path: PathBuf,
+        options:     Option<RecordingOptions>,
     },
     StopRecord,
     StopPlayback,

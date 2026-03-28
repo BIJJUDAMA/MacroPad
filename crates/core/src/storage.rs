@@ -1,5 +1,5 @@
 use crate::migration::{migrate, MigrationError};
-use crate::models::NitsRec;
+use crate::models::{AppConfig, NitsRec};
 use chrono::Local;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -98,5 +98,25 @@ pub fn list_history(path: &Path) -> Result<Vec<PathBuf>, StorageError> {
 pub fn restore_history(backup_path: &Path, target_path: &Path) -> Result<(), StorageError> {
     backup(target_path)?;
     fs::copy(backup_path, target_path)?;
+    Ok(())
+}
+
+pub fn load_config(path: &Path) -> Result<AppConfig, StorageError> {
+    if !path.exists() {
+        return Ok(AppConfig::default());
+    }
+
+    let raw_str = fs::read_to_string(path)?;
+    let config: AppConfig = toml::from_str(&raw_str)?;
+    Ok(config)
+}
+
+pub fn save_config(config: &AppConfig, path: &Path) -> Result<(), StorageError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let serialized = toml::to_string_pretty(config)?;
+    fs::write(path, serialized)?;
     Ok(())
 }

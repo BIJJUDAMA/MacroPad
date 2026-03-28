@@ -122,3 +122,27 @@ impl Default for RecordingOptions {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppConfig {
+    #[serde(default)]
+    pub playback_defaults: PlaybackConfig,
+    #[serde(default)]
+    pub recording_defaults: RecordingOptions,
+    #[serde(default = "default_theme")]
+    pub ui_theme: String,
+}
+
+fn default_theme() -> String {
+    "cyber".to_string()
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            playback_defaults: PlaybackConfig::default(),
+            recording_defaults: RecordingOptions::default(),
+            ui_theme: default_theme(),
+        }
+    }
+}

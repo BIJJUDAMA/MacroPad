@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { LibraryBrowser } from './components/LibraryBrowser'
 import { ScriptEditor } from './components/ScriptEditor'
+import { SettingsPanel } from './components/SettingsPanel'
 import { Database, Code2, Terminal, Settings } from 'lucide-react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
@@ -100,11 +101,14 @@ function App() {
           {tab === 'script' && (
             <ScriptEditor libraryPaths={paths} />
           )}
-          {(tab === 'terminal' || tab === 'settings') && (
+          {tab === 'terminal' && (
             <div className="flex items-center justify-center h-full text-tertiary text-sm tracking-widest font-bold uppercase py-20 flex-col gap-4">
               <span className="w-12 h-1 bg-surface-lighter rounded-full"></span>
-              {tab === 'terminal' ? 'Console' : 'Settings'} module standby
+              Console module standby
             </div>
+          )}
+          {tab === 'settings' && (
+            <SettingsPanel />
           )}
         </div>
       </main>
