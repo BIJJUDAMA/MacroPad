@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { HumanStep } from "./HumanStep"
 import { RawEvent, HumanAction, EditorView } from "../types/editor"
 import { MacroInfo } from "../types/macro"
-import { Save, X, Code2, Users, Activity } from 'lucide-react'
+import { Save, X, Code2, Users, Activity, History, RotateCcw } from 'lucide-react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 
@@ -163,6 +163,9 @@ export function StepEditor({ macro, onClose }: Props) {
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
+    const [showHistory, setShowHistory] = useState(false)
+    const [history, setHistory] = useState<string[]>([])
+    const [restoring, setRestoring] = useState(false)
 
     const overlayRef = useRef<HTMLDivElement>(null)
     const panelRef = useRef<HTMLDivElement>(null)
@@ -193,7 +196,35 @@ export function StepEditor({ macro, onClose }: Props) {
         }
     }, [macro.path])
 
-    useEffect(() => { load() }, [load])
+    const loadHist = useCallback(async () => {
+        try {
+            const h = await tauriInvoke<string[]>("list_macro_history", { path: macro.path })
+            setHistory(h)
+        } catch (e) {
+            console.error("failed to load history:", e)
+        }
+    }, [macro.path])
+
+    useEffect(() => { 
+        load() 
+        loadHist()
+    }, [load, loadHist])
+
+    async function handleRestore(backupPath: string) {
+        if (!window.confirm("Restore this version? current changes will be backed up.")) return
+        setRestoring(true)
+        setError(null)
+        try {
+            await tauriInvoke("restore_macro_version", { backupPath, targetPath: macro.path })
+            await load()
+            setShowHistory(false)
+            loadHist()
+        } catch (e) {
+            setError(String(e))
+        } finally {
+            setRestoring(false)
+        }
+    }
 
     async function handleSave() {
         setSaving(true)
@@ -266,6 +297,59 @@ export function StepEditor({ macro, onClose }: Props) {
                             </button>
                         </div>
                         
+                        <div className="w-px h-6 bg-surface-lighter mx-1"></div>
+
+                        {/* History Dropdown */}
+                        <div className="relative">
+                            <button 
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${showHistory ? 'bg-surface-lighter border-secondary text-primary' : 'bg-surface border-surface-lighter text-tertiary hover:text-gray-200'}`}
+                                onClick={() => setShowHistory(!showHistory)}
+                            >
+                                <History size={14} /> History
+                            </button>
+
+                            {showHistory && (
+                                <div className="absolute right-0 mt-2 w-72 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-3 border-b border-surface-lighter bg-surface/50">
+                                        <h3 className="text-[10px] uppercase font-bold tracking-widest text-tertiary">Version Backups</h3>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                                        {history.length === 0 ? (
+                                            <div className="px-4 py-8 text-center text-xs text-surface-lighter italic">
+                                                No backups found yet
+                                            </div>
+                                        ) : (
+                                            history.map((h, i) => {
+                                                const filename = h.split(/[\\/]/).pop() || ""
+                                                const match = filename.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/)
+                                                const label = match 
+                                                    ? `${match[1]}-${match[2]}-${match[3]} ${match[4]}:${match[5]}:${match[6]}`
+                                                    : filename
+                                                
+                                                return (
+                                                    <button 
+                                                        key={i}
+                                                        disabled={restoring}
+                                                        className={`w-full flex items-center justify-between px-4 py-3 hover:bg-surface-lighter/40 transition-colors group border-b border-surface-lighter/50 last:border-0 ${restoring ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        onClick={() => handleRestore(h)}
+                                                    >
+                                                        <div className="text-left">
+                                                            <div className="text-[11px] font-mono text-gray-300 group-hover:text-primary transition-colors">{label}</div>
+                                                            <div className="text-[9px] text-surface-lighter truncate max-w-[200px]">{filename}</div>
+                                                        </div>
+                                                        <RotateCcw size={14} className={`text-surface-lighter group-hover:text-secondary opacity-0 group-hover:opacity-100 transition-all transform group-hover:-rotate-45 ${restoring ? 'animate-spin' : ''}`} />
+                                                    </button>
+                                                )
+                                            })
+                                        )}
+                                    </div>
+                                    <div className="px-4 py-2 bg-neutral text-[9px] text-surface-lighter text-center border-t border-surface-lighter">
+                                        Backups are created automatically on each save
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="w-px h-6 bg-surface-lighter mx-1"></div>
 
                         <button 

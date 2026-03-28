@@ -224,6 +224,59 @@ fn duplicate_file(path: String) -> Result<String, String> {
     Ok(dest.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn list_macro_history(path: String) -> Result<Vec<String>, String> {
+    let p = std::path::PathBuf::from(&path);
+    let history = macropad_core::list_history(&p)
+        .map_err(|e| e.to_string())?;
+    
+    Ok(history.into_iter()
+        .map(|p| p.to_string_lossy().to_string())
+        .collect())
+}
+
+#[tauri::command]
+fn restore_macro_version(backup_path: String, target_path: String) -> Result<(), String> {
+    let b = std::path::PathBuf::from(&backup_path);
+    let t = std::path::PathBuf::from(&target_path);
+    macropad_core::restore_history(&b, &t)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn wrap_macro_in_script(macro_path: String) -> Result<String, String> {
+    let macro_p = std::path::PathBuf::from(&macro_path);
+    let macro_name = macro_p.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("macro.nitsrec");
+    
+    let script_path = macro_p.with_extension("nitscript");
+    
+    let final_script_path = if script_path.exists() {
+        let parent = script_path.parent().unwrap_or(std::path::Path::new("."));
+        let stem = script_path.file_stem().and_then(|s| s.to_str()).unwrap_or("script");
+        let mut i = 1;
+        loop {
+            let candidate = parent.join(format!("{}_{}.nitscript", stem, i));
+            if !candidate.exists() { break candidate; }
+            i += 1;
+        }
+    } else {
+        script_path
+    };
+
+    let content = format!(
+        "// Auto-generated wrapper for {}\nrun \"./{}\"\n",
+        macro_name, macro_name
+    );
+
+    std::fs::write(&final_script_path, content)
+        .map_err(|e| e.to_string())?;
+
+    Ok(final_script_path.to_string_lossy().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -270,6 +323,9 @@ pub fn run() {
             browse_nitscript,
             new_nitscript,
             duplicate_file,
+            list_macro_history,
+            restore_macro_version,
+            wrap_macro_in_script,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

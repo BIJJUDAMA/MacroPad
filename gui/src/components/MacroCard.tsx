@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { MacroInfo } from "../types/macro"
 import { StepEditor } from "./StepEditor"
-import { Play, Square, Edit3, Copy, Trash2, Clock, Activity, Hash, Layers } from 'lucide-react'
+import { Play, Square, Edit3, Copy, Trash2, Clock, Activity, Hash, Layers, FileCode } from 'lucide-react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 
@@ -17,7 +17,7 @@ interface Props {
     onDuplicate: () => void
 }
 
-export function MacroCard({ macro, onRemove, onDuplicate }: Props) {
+export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
     const [playing, setPlaying] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showEditor, setShowEditor] = useState(false)
@@ -115,6 +115,18 @@ export function MacroCard({ macro, onRemove, onDuplicate }: Props) {
         }
     }
 
+    async function handleWrapInScript() {
+        setError(null)
+        try {
+            const success = await tauriInvoke<boolean>("wrap_macro_in_script", { macroPath: macro.path })
+            if (success) {
+                onRefresh()
+            }
+        } catch (e) {
+            setError(String(e))
+        }
+    }
+
     return (
         <>
             {showEditor && (
@@ -178,6 +190,14 @@ export function MacroCard({ macro, onRemove, onDuplicate }: Props) {
                             title="Edit Macro"
                         >
                             <Edit3 size={18} />
+                        </button>
+                        
+                        <button 
+                            className="p-2 bg-surface hover:bg-secondary/10 text-gray-400 hover:text-secondary border border-surface-lighter hover:border-secondary/30 rounded-lg transition-all"
+                            onClick={handleWrapInScript}
+                            title="Wrap in NitScript"
+                        >
+                            <FileCode size={18} />
                         </button>
                         
                         <button 

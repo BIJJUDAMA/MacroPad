@@ -3,7 +3,7 @@ import { MacroCard } from "./MacroCard"
 import { useDaemonStatus, useMacroList } from "../hooks/useDaemon"
 import { useRecording } from "../hooks/useRecording"
 import { RecordingIndicator } from "./RecordingIndicator"
-import { Search, Plus, Radio, RefreshCw, DatabaseZap } from 'lucide-react'
+import { Search, Plus, Radio, RefreshCw, DatabaseZap, Info, Zap } from 'lucide-react'
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -20,6 +20,7 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
     const { macros, loading, error, refresh, addMacro, removeMacro, duplicateMacro } = useMacroList(paths, setPaths)
     const [search, setSearch] = useState("")
     const [tagFilter, setTagFilter] = useState<string | null>(null)
+    const [showInfo, setShowInfo] = useState(false)
 
     const onRecordSaved = useCallback((path: string) => {
         addMacro(path)
@@ -68,8 +69,66 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                    {/* Playback Status */}
+                    {status === "online" && (
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-surface border border-surface-lighter rounded-lg mr-2 group relative cursor-help">
+                            <Zap size={14} className="text-secondary animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-tertiary">Engine Ready</span>
+                            
+                            {/* Tooltip for status */}
+                            <div className="absolute top-full right-0 mt-2 w-64 p-4 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[70] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                                <h4 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
+                                    <Zap size={12} /> Execution Engine
+                                </h4>
+                                <p className="text-[10px] leading-relaxed text-tertiary">
+                                    The MacroNits engine is connected. It handles smooth mouse movements, high-fidelity keyboard emulation, and script logic.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     <button
-                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all shadow-lg ${
+                        className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-primary rounded-lg transition-colors group relative"
+                        onClick={() => setShowInfo(!showInfo)}
+                        title="Help / Documentation"
+                    >
+                        <Info size={18} />
+                        {showInfo && (
+                            <div className="absolute top-full right-0 mt-3 w-80 p-5 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[70] text-left">
+                                <h4 className="text-sm font-bold text-gray-100 mb-3 flex items-center gap-2">
+                                    <DatabaseZap size={16} className="text-primary" /> MacroNits Ecosystem
+                                </h4>
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                            <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Macros (.nitsrec)</span>
+                                        </div>
+                                        <p className="text-[10px] text-tertiary leading-relaxed">
+                                            High-fidelity recordings of your input. Use these for raw automation. Every save creates a backup in history.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+                                            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">Scripts (.nitscript)</span>
+                                        </div>
+                                        <p className="text-[10px] text-tertiary leading-relaxed">
+                                            Logic-driven automation. Wraps macros to add loops, conditions, and variables. Edit these with your preferred IDE.
+                                        </p>
+                                    </div>
+                                    <div className="pt-2 border-t border-surface-lighter">
+                                        <p className="text-[9px] text-surface-lighter italic">
+                                            Tip: Click the 'FileCode' icon on any macro to wrap it in a script automatically.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </button>
+                    
+                    <button
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all shadow-lg ${
                             recState !== "idle" 
                             ? "bg-surface text-tertiary border border-surface-lighter opacity-50 cursor-not-allowed" 
                             : "bg-primary text-neutral hover:bg-[#ff7a45] shadow-primary/20"
