@@ -3,6 +3,7 @@ import { MacroCard } from "./MacroCard"
 import { useDaemonStatus, useMacroList } from "../hooks/useDaemon"
 import { useRecording } from "../hooks/useRecording"
 import { RecordingIndicator } from "./RecordingIndicator"
+import { Search, Plus, Radio, RefreshCw, DatabaseZap } from 'lucide-react'
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -43,31 +44,57 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
     }
 
     return (
-        <div style={styles.root}>
-            <div style={styles.toolbar}>
-                <div style={styles.left}>
-                    <span style={styles.title}>macro library</span>
-                    <span style={{
-                        ...styles.statusBadge,
-                        background: status === "offline" ? "#45475a" : "#a6e3a1",
-                        color: status === "offline" ? "#cdd6f4" : "#1e1e2e",
-                    }}>
-                        {status === "offline" ? "daemon offline" : status.toLowerCase()}
-                    </span>
+        <div className="p-6 md:p-10 max-w-6xl mx-auto h-full flex flex-col">
+            {/* Header / Toolbar */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 p-2.5 rounded-xl border border-primary/20">
+                        <DatabaseZap className="text-primary" size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-200 tracking-tight">Vault</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="relative flex h-2 w-2">
+                              {status === "online" && (
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+                              )}
+                              <span className={`relative inline-flex rounded-full h-2 w-2 ${status === 'online' ? 'bg-secondary' : 'bg-red-500'}`}></span>
+                            </span>
+                            <span className="text-xs font-mono text-tertiary uppercase tracking-wider">
+                                Backend: {status === "offline" ? "Disconnected" : "Online"}
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div style={styles.right}>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
-                        style={{
-                            ...styles.btnRecord,
-                            opacity: recState !== "idle" ? 0.5 : 1,
-                        }}
+                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all shadow-lg ${
+                            recState !== "idle" 
+                            ? "bg-surface text-tertiary border border-surface-lighter opacity-50 cursor-not-allowed" 
+                            : "bg-primary text-neutral hover:bg-[#ff7a45] shadow-primary/20"
+                        }`}
                         onClick={startRecording}
                         disabled={recState !== "idle"}
                     >
-                        {recState === "idle" ? "record" : recState === "recording" ? "recording..." : "saving..."}
+                        <Radio size={16} /> 
+                        {recState === "idle" ? "Record" : recState === "recording" ? "Recording..." : "Saving..."}
                     </button>
-                    <button style={styles.btnAdd} onClick={handleBrowse}>+ add macro</button>
-                    <button style={styles.btnRefresh} onClick={refresh}>refresh</button>
+                    
+                    <button 
+                        className="flex items-center gap-2 bg-surface hover:bg-surface-light border border-surface-lighter text-gray-300 hover:text-white px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors"
+                        onClick={handleBrowse}
+                    >
+                        <Plus size={18} /> Add
+                    </button>
+                    
+                    <button 
+                        className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-gray-200 rounded-lg transition-colors"
+                        onClick={refresh}
+                        title="Refresh Macro List"
+                    >
+                        <RefreshCw size={18} />
+                    </button>
                 </div>
             </div>
 
@@ -77,76 +104,93 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                 error={recError}
             />
 
-            <div style={styles.filters}>
-                <input
-                    style={styles.search}
-                    placeholder="search macros..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                />
-                <div style={styles.tagRow}>
-                    <span
-                        style={{ ...styles.tagFilter, background: tagFilter === null ? "#89b4fa" : "#313244", color: tagFilter === null ? "#1e1e2e" : "#cdd6f4" }}
-                        onClick={() => setTagFilter(null)}
-                    >all</span>
-                    {allTags.map(tag => (
-                        <span
-                            key={tag}
-                            style={{ ...styles.tagFilter, background: tagFilter === tag ? "#89b4fa" : "#313244", color: tagFilter === tag ? "#1e1e2e" : "#cdd6f4" }}
-                            onClick={() => setTagFilter(tag === tagFilter ? null : tag)}
-                        >{tag}</span>
-                    ))}
+            {/* Filters */}
+            <div className="mb-6 flex flex-col gap-4">
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-tertiary" size={18} />
+                    <input
+                        className="w-full bg-surface border border-surface-lighter text-gray-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-secondary transition-colors font-mono text-sm placeholder-tertiary/70"
+                        placeholder="Search macros by name or tag..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
                 </div>
+                
+                {allTags.length > 0 && (
+                    <div className="flex gap-2 flex-wrap items-center">
+                        <span className="text-xs font-mono text-tertiary uppercase tracking-wider mr-2">Filters:</span>
+                        <button
+                            className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-colors border ${
+                                tagFilter === null 
+                                ? "bg-secondary/15 text-secondary border-secondary/30" 
+                                : "bg-surface text-tertiary border-surface-lighter hover:border-tertiary"
+                            }`}
+                            onClick={() => setTagFilter(null)}
+                        >
+                            All
+                        </button>
+                        {allTags.map(tag => (
+                            <button
+                                key={tag}
+                                className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-colors border ${
+                                    tagFilter === tag 
+                                    ? "bg-secondary/15 text-secondary border-secondary/30" 
+                                    : "bg-surface text-tertiary border-surface-lighter hover:border-tertiary"
+                                }`}
+                                onClick={() => setTagFilter(tag === tagFilter ? null : tag)}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {loading && <div style={styles.state}>loading...</div>}
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                {loading && (
+                    <div className="flex flex-col items-center justify-center py-20 text-tertiary">
+                        <RefreshCw className="animate-spin mb-4" size={32} />
+                        <p className="font-mono text-sm uppercase tracking-widest">Loading Vault...</p>
+                    </div>
+                )}
 
-            {error && (
-                <div style={styles.errorBanner}>
-                    {error.includes("daemon")
-                        ? "daemon is not running — start it with: cargo run -p daemon"
-                        : error}
-                </div>
-            )}
+                {error && (
+                    <div className="bg-red-950/20 border border-red-500/30 rounded-xl p-6 text-red-400 font-mono text-sm">
+                        <div className="font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <DatabaseZap size={16} /> Error Fetching Data
+                        </div>
+                        {error.includes("daemon")
+                            ? "Daemon is not responding. Please ensure the macronits daemon is running."
+                            : error}
+                    </div>
+                )}
 
-            {!loading && !error && filtered.length === 0 && (
-                <div style={styles.state}>
-                    {macros.length === 0
-                        ? "no macros loaded — click record to capture or + add macro to load"
-                        : "no macros match your search"}
-                </div>
-            )}
+                {!loading && !error && filtered.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-24 text-tertiary border border-dashed border-surface-lighter rounded-xl bg-surface/30">
+                        <DatabaseZap size={48} className="mb-4 opacity-20" />
+                        <p className="font-mono text-sm uppercase tracking-widest">
+                            {macros.length === 0
+                                ? "No macros in vault. Start recording."
+                                : "No macros match your search criteria."}
+                        </p>
+                    </div>
+                )}
 
-            <div style={styles.list}>
-                {filtered.map(macro => (
-                    <MacroCard
-                        key={macro.path}
-                        macro={macro}
-                        onRefresh={refresh}
-                        onRemove={() => removeMacro(macro.path)}
-                        onDuplicate={() => duplicateMacro(macro.path)}
-                    />
-                ))}
+                {!loading && !error && (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        {filtered.map(macro => (
+                            <MacroCard
+                                key={macro.path}
+                                macro={macro}
+                                onRefresh={refresh}
+                                onRemove={() => removeMacro(macro.path)}
+                                onDuplicate={() => duplicateMacro(macro.path)}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-    root: { padding: "24px", background: "#181825", minHeight: "100vh", fontFamily: "monospace", color: "#cdd6f4" },
-    toolbar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-    left: { display: "flex", alignItems: "center", gap: 12 },
-    right: { display: "flex", gap: 8 },
-    title: { fontSize: 22, fontWeight: 700, color: "#cdd6f4", letterSpacing: "0.02em" },
-    statusBadge: { borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600 },
-    btnRecord: { background: "#f38ba8", color: "#1e1e2e", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "monospace" },
-    btnAdd: { background: "#89b4fa", color: "#1e1e2e", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "monospace" },
-    btnRefresh: { background: "#313244", color: "#cdd6f4", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontFamily: "monospace" },
-    filters: { marginBottom: 20 },
-    search: { width: "100%", background: "#1e1e2e", border: "1px solid #313244", borderRadius: 6, padding: "8px 12px", fontSize: 13, color: "#cdd6f4", fontFamily: "monospace", marginBottom: 10, boxSizing: "border-box", outline: "none" },
-    tagRow: { display: "flex", gap: 6, flexWrap: "wrap" },
-    tagFilter: { borderRadius: 4, padding: "3px 10px", fontSize: 11, cursor: "pointer", userSelect: "none" },
-    list: { marginTop: 8 },
-    state: { textAlign: "center", color: "#6c7086", fontSize: 14, marginTop: 60, lineHeight: 1.6 },
-    errorBanner: { background: "#2a1a1e", border: "1px solid #f38ba8", borderRadius: 6, padding: "10px 16px", color: "#f38ba8", fontSize: 13, marginBottom: 16 },
 }

@@ -1,5 +1,6 @@
 import { useRef } from "react"
 import { BlockStatement, BlockType, PALETTE } from "../types/script"
+import { Trash2, GripVertical, Plus } from 'lucide-react'
 
 interface Props {
     blocks: BlockStatement[]
@@ -47,43 +48,60 @@ function BlockCard({
     }
 }) {
     const palette = PALETTE.find(p => p.type === block.type)
-    const color = palette?.color ?? "#5F5E5A"
+    const color = palette?.color ?? "#89CFF0"
     const hasBody = ["if", "elif", "else", "loop", "loop_while"].includes(block.type)
 
     return (
         <div
-            style={{ ...styles.block, borderLeftColor: color, marginLeft: depth * 20 }}
+            className="mb-3 bg-surface border border-surface-lighter rounded-lg overflow-hidden flex flex-col transition-shadow hover:shadow-md"
+            style={{ marginLeft: depth * 24 }}
             draggable
             onDragStart={e => dragHandlers.onDragStart(e, block.id)}
             onDragOver={e => dragHandlers.onDragOver(e, block.id)}
             onDrop={e => dragHandlers.onDrop(e, block.id)}
         >
-            <div style={styles.blockHeader}>
-                <div style={{ ...styles.blockType, color }}>
+            <div className="flex items-start p-3 gap-3 bg-surface-light relative group">
+                {/* Drag Handle & Left Border Indicator */}
+                <div 
+                    className="absolute left-0 top-0 bottom-0 w-1 drop-shadow-sm opacity-80"
+                    style={{ backgroundColor: color }}
+                />
+                
+                <div className="text-tertiary cursor-grab active:cursor-grabbing hover:text-gray-300 mt-0.5" title="Drag to reorder">
+                    <GripVertical size={16} />
+                </div>
+
+                <div 
+                    className="text-xs font-bold uppercase tracking-wider w-24 pt-1"
+                    style={{ color }}
+                >
                     {block.type}
                 </div>
-                <div style={styles.blockArgs}>
+                
+                <div className="flex-1 flex flex-col gap-2">
                     {Object.entries(block.args).map(([key, val]) => (
-                        <div key={key} style={styles.argRow}>
-                            <span style={styles.argKey}>{key}</span>
+                        <div key={key} className="flex items-center gap-2">
+                            <span className="text-[10px] text-tertiary uppercase tracking-widest w-16 text-right select-none">{key}</span>
                             <input
-                                style={styles.argInput}
+                                className="flex-1 bg-neutral border border-surface-lighter rounded-md px-2 py-1 text-xs text-gray-200 font-mono focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary/30 transition-all placeholder:text-surface-lighter"
                                 value={val}
                                 onChange={e => onUpdate(block.id, { ...block.args, [key]: e.target.value })}
                             />
                         </div>
                     ))}
                 </div>
+
                 <button
-                    style={styles.deleteBtn}
+                    className="text-surface-lighter hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-surface hover:bg-surface-lighter rounded-md"
                     onClick={() => onDelete(block.id)}
+                    title="Delete block"
                 >
-                    ✕
+                    <Trash2 size={16} />
                 </button>
             </div>
 
             {hasBody && (
-                <div style={styles.childZone}>
+                <div className="border-t border-surface-lighter bg-neutral/50 p-3 pl-8">
                     {block.children.map(child => (
                         <BlockCard
                             key={child.id}
@@ -95,14 +113,15 @@ function BlockCard({
                             dragHandlers={dragHandlers}
                         />
                     ))}
-                    <div style={styles.addChild}>
+                    <div className="flex flex-wrap gap-2 mt-2">
                         {PALETTE.filter(p => !["if", "elif", "else"].includes(p.type)).map(p => (
                             <button
                                 key={p.type}
-                                style={{ ...styles.addChildBtn, borderColor: p.color, color: p.color }}
+                                className="flex items-center gap-1 bg-surface-light border border-surface-lighter hover:bg-surface-lighter rounded-md px-2 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors"
+                                style={{ color: p.color }}
                                 onClick={() => onAddChild(block.id, p.type)}
                             >
-                                + {p.label}
+                                <Plus size={10} /> {p.label}
                             </button>
                         ))}
                     </div>
@@ -166,6 +185,7 @@ export function BlockEditor({ blocks, onChange, scriptDir: _ }: Props) {
     const dragHandlers = {
         onDragStart: (_e: React.DragEvent, id: string) => {
             dragId.current = id
+            // Optional: Add some visual feedback to _e.dataTransfer
         },
         onDragOver: (e: React.DragEvent, id: string) => {
             e.preventDefault()
@@ -203,174 +223,53 @@ export function BlockEditor({ blocks, onChange, scriptDir: _ }: Props) {
     }
 
     return (
-        <div style={styles.root}>
-            <div style={styles.palette}>
-                <div style={styles.paletteTitle}>blocks</div>
+        <div className="flex h-full w-full overflow-hidden bg-neutral">
+            {/* Palette Sidebar */}
+            <div className="w-[220px] bg-surface/50 border-r border-surface-lighter p-4 flex flex-col overflow-y-auto shrink-0 custom-scrollbar">
+                <div className="text-[10px] text-tertiary uppercase tracking-widest font-bold mb-4 px-1">Component Library</div>
                 {PALETTE.map(item => (
                     <button
                         key={item.type}
-                        style={{ ...styles.paletteBtn, borderLeftColor: item.color }}
+                        className="flex flex-col text-left bg-surface border border-surface-lighter hover:border-gray-600 rounded-lg p-3 mb-2 transition-all hover:-translate-y-0.5 select-none relative overflow-hidden"
                         onClick={() => addBlock(item.type)}
                         title={item.description}
                     >
-                        <span style={{ color: item.color }}>{item.label}</span>
-                        <span style={styles.paletteDesc}>{item.description}</span>
+                        <div 
+                            className="absolute left-0 top-0 bottom-0 w-1"
+                            style={{ backgroundColor: item.color }}
+                        />
+                        <span className="font-bold text-xs pl-2" style={{ color: item.color }}>{item.label}</span>
+                        <span className="text-[10px] text-gray-500 mt-1 pl-2 leading-tight">{item.description}</span>
                     </button>
                 ))}
             </div>
 
-            <div style={styles.canvas}>
+            {/* Canvas Area */}
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar relative">
                 {blocks.length === 0 ? (
-                    <div style={styles.empty}>
-                        drag blocks from the left panel or click to add them
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-tertiary">
+                        <div className="border border-dashed border-surface-lighter rounded-xl p-12 text-center bg-surface/30">
+                            <Plus size={32} className="mx-auto mb-4 opacity-50" />
+                            <p className="font-mono text-xs uppercase tracking-widest">Construct Blueprint</p>
+                            <p className="text-[10px] opacity-60 mt-2">Drag components from library or click to insert</p>
+                        </div>
                     </div>
                 ) : (
-                    blocks.map((block) => (
-                        <BlockCard
-                            key={block.id}
-                            block={block}
-                            depth={0}
-                            onDelete={deleteBlock}
-                            onUpdate={updateBlock}
-                            onAddChild={addChild}
-                            dragHandlers={dragHandlers}
-                        />
-                    ))
+                    <div className="max-w-4xl pb-10">
+                        {blocks.map((block) => (
+                            <BlockCard
+                                key={block.id}
+                                block={block}
+                                depth={0}
+                                onDelete={deleteBlock}
+                                onUpdate={updateBlock}
+                                onAddChild={addChild}
+                                dragHandlers={dragHandlers}
+                            />
+                        ))}
+                    </div>
                 )}
             </div>
         </div>
     )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-    root: {
-        display: "flex",
-        flex: 1,
-        overflow: "hidden",
-    },
-    palette: {
-        width: 200,
-        background: "#13131e",
-        borderRight: "1px solid #313244",
-        padding: "12px 8px",
-        overflowY: "auto",
-        flexShrink: 0,
-    },
-    paletteTitle: {
-        fontSize: 10,
-        color: "#45475a",
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-        marginBottom: 8,
-        padding: "0 4px",
-    },
-    paletteBtn: {
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        background: "#1e1e2e",
-        border: "1px solid #313244",
-        borderLeft: "3px solid",
-        borderRadius: 4,
-        padding: "8px 10px",
-        marginBottom: 6,
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "monospace",
-        fontSize: 12,
-    },
-    paletteDesc: {
-        fontSize: 10,
-        color: "#45475a",
-        marginTop: 2,
-    },
-    canvas: {
-        flex: 1,
-        padding: "16px",
-        overflowY: "auto",
-    },
-    empty: {
-        textAlign: "center",
-        color: "#45475a",
-        fontSize: 13,
-        marginTop: 60,
-        lineHeight: 1.6,
-    },
-    block: {
-        background: "#1e1e2e",
-        border: "1px solid #313244",
-        borderLeft: "3px solid",
-        borderRadius: 6,
-        marginBottom: 8,
-        fontFamily: "monospace",
-    },
-    blockHeader: {
-        display: "flex",
-        alignItems: "flex-start",
-        padding: "10px 12px",
-        gap: 12,
-    },
-    blockType: {
-        fontSize: 12,
-        fontWeight: 600,
-        minWidth: 80,
-        paddingTop: 2,
-    },
-    blockArgs: {
-        flex: 1,
-        gap: 6,
-        display: "flex",
-        flexDirection: "column",
-    },
-    argRow: {
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-    },
-    argKey: {
-        fontSize: 11,
-        color: "#6c7086",
-        minWidth: 60,
-        textAlign: "right",
-    },
-    argInput: {
-        background: "#313244",
-        border: "1px solid #45475a",
-        borderRadius: 4,
-        padding: "3px 8px",
-        color: "#cdd6f4",
-        fontSize: 12,
-        fontFamily: "monospace",
-        outline: "none",
-        flex: 1,
-    },
-    deleteBtn: {
-        background: "transparent",
-        border: "none",
-        color: "#f38ba8",
-        cursor: "pointer",
-        fontSize: 14,
-        padding: "0 4px",
-        lineHeight: 1,
-    },
-    childZone: {
-        borderTop: "1px solid #313244",
-        padding: "8px 12px 8px 24px",
-        background: "#181825",
-    },
-    addChild: {
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 4,
-        marginTop: 6,
-    },
-    addChildBtn: {
-        background: "transparent",
-        border: "1px solid",
-        borderRadius: 4,
-        padding: "2px 8px",
-        fontSize: 10,
-        cursor: "pointer",
-        fontFamily: "monospace",
-    },
 }

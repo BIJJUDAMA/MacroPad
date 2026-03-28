@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { HumanAction } from "../types/editor"
+import { ChevronDown, ChevronRight, Clock, Trash2, Edit2, Check, X } from 'lucide-react'
 
 interface Props {
     action: HumanAction
@@ -22,65 +23,85 @@ export function HumanStep({ action, index, onDelete, onUpdateDelay }: Props) {
     }
 
     return (
-        <div style={styles.step}>
-            <div style={styles.row}>
-                <div style={styles.left}>
-                    <span style={styles.index}>{index + 1}</span>
-                    <div>
-                        <div style={styles.label}>{action.label}</div>
+        <div className="bg-surface border border-surface-lighter rounded-lg p-3 mb-2 hover:border-gray-600 transition-colors group">
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex items-start gap-3 flex-1">
+                    <span className="flex items-center justify-center bg-surface-lighter text-tertiary rounded-md text-[10px] min-w-[24px] h-[24px] mt-0.5 font-bold font-mono">
+                        {index + 1}
+                    </span>
+                    <div className="flex-1">
+                        <div className="text-sm text-gray-200 font-bold tracking-wide">{action.label}</div>
                         {action.editable_ms !== undefined ? (
                             editingMs ? (
-                                <div style={styles.editRow}>
+                                <div className="flex items-center gap-2 mt-2 bg-neutral p-1.5 rounded-md border border-secondary/30">
+                                    <Clock size={12} className="text-secondary" />
                                     <input
-                                        style={styles.msInput}
+                                        className="bg-transparent text-gray-200 text-xs w-16 font-mono outline-none"
                                         value={msValue}
                                         onChange={e => setMsValue(e.target.value)}
                                         onKeyDown={e => { if (e.key === "Enter") handleSaveMs() }}
                                         autoFocus
                                     />
-                                    <span style={styles.msLabel}>ms</span>
-                                    <button style={styles.btnSave} onClick={handleSaveMs}>save</button>
-                                    <button style={styles.btnCancel} onClick={() => setEditingMs(false)}>cancel</button>
+                                    <span className="text-[10px] text-tertiary">ms</span>
+                                    <div className="flex gap-1 ml-auto">
+                                        <button 
+                                            className="p-1 text-green-400 hover:bg-green-400/20 rounded-md transition-colors" 
+                                            onClick={handleSaveMs}
+                                        >
+                                            <Check size={14} />
+                                        </button>
+                                        <button 
+                                            className="p-1 text-tertiary hover:bg-surface-lighter rounded-md transition-colors" 
+                                            onClick={() => setEditingMs(false)}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div
-                                    style={styles.detail}
+                                    className="flex items-center gap-1.5 text-xs text-tertiary mt-1 cursor-pointer hover:text-secondary transition-colors inline-block group/edit"
                                     onClick={() => setEditingMs(true)}
-                                    title="click to edit"
+                                    title="Edit duration"
                                 >
-                                    {action.detail} ✎
+                                    <Clock size={10} />
+                                    <span>{action.detail}</span>
+                                    <Edit2 size={10} className="opacity-0 group-hover/edit:opacity-100 transition-opacity" />
                                 </div>
                             )
                         ) : (
-                            <div style={styles.detail}>{action.detail}</div>
+                            <div className="text-xs text-tertiary mt-1 font-mono">{action.detail}</div>
                         )}
                     </div>
                 </div>
-                <div style={styles.actions}>
+                
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     {action.raw_events.length > 1 && (
                         <button
-                            style={styles.btnExpand}
+                            className="p-1.5 text-tertiary hover:bg-surface-lighter hover:text-gray-200 rounded-md transition-colors"
                             onClick={() => setExpanded(e => !e)}
+                            title={expanded ? "Collapse details" : "Expand details"}
                         >
-                            {expanded ? "collapse" : "expand"}
+                            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </button>
                     )}
                     <button
-                        style={styles.btnDelete}
+                        className="p-1.5 text-surface-lighter hover:bg-red-500/10 hover:text-red-400 rounded-md transition-colors"
                         onClick={() => onDelete(action.id)}
+                        title="Delete action"
                     >
-                        delete
+                        <Trash2 size={14} />
                     </button>
                 </div>
             </div>
 
             {expanded && (
-                <div style={styles.rawList}>
+                <div className="mt-3 pt-3 border-t border-surface-lighter space-y-1">
                     {action.raw_events.map((e, i) => (
-                        <div key={i} style={styles.rawRow}>
-                            <span style={styles.rawTime}>{e.time_ms}ms</span>
-                            <span style={styles.rawType}>{e.type}</span>
-                            <span style={styles.rawDetail}>
+                        <div key={i} className="flex gap-4 text-[10px] font-mono hover:bg-surface-lighter/50 px-2 py-1 rounded-sm">
+                            <span className="text-tertiary min-w-[50px]">{e.time_ms}ms</span>
+                            <span className="text-secondary min-w-[90px] uppercase tracking-widest">{e.type}</span>
+                            <span className="text-gray-400 truncate">
                                 {e.key || e.value || (e.x !== undefined ? `(${e.x}, ${e.y})` : "") || ""}
                             </span>
                         </div>
@@ -89,133 +110,4 @@ export function HumanStep({ action, index, onDelete, onUpdateDelay }: Props) {
             )}
         </div>
     )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-    step: {
-        background: "#1e1e2e",
-        border: "1px solid #313244",
-        borderRadius: 8,
-        padding: "12px 16px",
-        marginBottom: 8,
-    },
-    row: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    left: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-    },
-    index: {
-        background: "#313244",
-        color: "#6c7086",
-        borderRadius: 4,
-        padding: "2px 8px",
-        fontSize: 11,
-        minWidth: 24,
-        textAlign: "center",
-    },
-    label: {
-        fontSize: 14,
-        color: "#cdd6f4",
-        fontWeight: 500,
-    },
-    detail: {
-        fontSize: 12,
-        color: "#6c7086",
-        marginTop: 2,
-        cursor: "text",
-    },
-    editRow: {
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        marginTop: 4,
-    },
-    msInput: {
-        background: "#313244",
-        border: "1px solid #89b4fa",
-        borderRadius: 4,
-        padding: "2px 6px",
-        color: "#cdd6f4",
-        fontSize: 12,
-        width: 70,
-        fontFamily: "monospace",
-        outline: "none",
-    },
-    msLabel: {
-        fontSize: 12,
-        color: "#6c7086",
-    },
-    btnSave: {
-        background: "#a6e3a1",
-        color: "#1e1e2e",
-        border: "none",
-        borderRadius: 4,
-        padding: "2px 8px",
-        fontSize: 11,
-        cursor: "pointer",
-        fontFamily: "monospace",
-    },
-    btnCancel: {
-        background: "#45475a",
-        color: "#cdd6f4",
-        border: "none",
-        borderRadius: 4,
-        padding: "2px 8px",
-        fontSize: 11,
-        cursor: "pointer",
-        fontFamily: "monospace",
-    },
-    actions: {
-        display: "flex",
-        gap: 6,
-    },
-    btnExpand: {
-        background: "#313244",
-        color: "#89b4fa",
-        border: "none",
-        borderRadius: 4,
-        padding: "4px 10px",
-        fontSize: 11,
-        cursor: "pointer",
-        fontFamily: "monospace",
-    },
-    btnDelete: {
-        background: "#2a1a1e",
-        color: "#f38ba8",
-        border: "1px solid #f38ba8",
-        borderRadius: 4,
-        padding: "4px 10px",
-        fontSize: 11,
-        cursor: "pointer",
-        fontFamily: "monospace",
-    },
-    rawList: {
-        marginTop: 10,
-        borderTop: "1px solid #313244",
-        paddingTop: 10,
-    },
-    rawRow: {
-        display: "flex",
-        gap: 12,
-        fontSize: 11,
-        fontFamily: "monospace",
-        marginBottom: 4,
-        color: "#6c7086",
-    },
-    rawTime: {
-        color: "#45475a",
-        minWidth: 60,
-    },
-    rawType: {
-        color: "#89b4fa",
-        minWidth: 100,
-    },
-    rawDetail: {
-        color: "#cdd6f4",
-    },
 }

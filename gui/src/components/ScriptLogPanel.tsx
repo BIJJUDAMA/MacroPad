@@ -1,72 +1,63 @@
+import { TerminalIcon } from 'lucide-react'
+
 interface Props {
     lines: string[]
     running: boolean
 }
 
 export function ScriptLogPanel({ lines, running }: Props) {
-    if (lines.length === 0 && !running) return null
+    if (lines.length === 0 && !running) return (
+        <div className="h-full w-full bg-surface border-t border-surface-lighter flex flex-col">
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-surface-lighter bg-surface-lighter/30">
+                <TerminalIcon size={14} className="text-tertiary" />
+                <span className="text-[10px] text-tertiary uppercase tracking-[0.15em] font-bold">Execution Output</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-tertiary font-mono text-xs opacity-50">
+                // System awaiting execution commands
+            </div>
+        </div>
+    )
 
     return (
-        <div style={styles.panel}>
-            <div style={styles.header}>
-                <span style={styles.title}>output</span>
-                {running && <span style={styles.running}>running...</span>}
+        <div className="h-full w-full bg-surface border-t border-surface-lighter flex flex-col">
+            <div className="flex justify-between items-center px-4 py-2 border-b border-surface-lighter bg-surface-lighter/30">
+                <div className="flex items-center gap-2">
+                    <TerminalIcon size={14} className="text-tertiary" />
+                    <span className="text-[10px] text-tertiary uppercase tracking-[0.15em] font-bold">Execution Output</span>
+                    {running && (
+                        <span className="flex items-center gap-1.5 ml-2 border border-secondary/30 bg-secondary/10 px-2 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                            <span className="text-[9px] text-secondary uppercase tracking-widest font-bold">Processing</span>
+                        </span>
+                    )}
+                </div>
+                <div className="text-[9px] text-tertiary font-mono">
+                    [{lines.length} lines emitted]
+                </div>
             </div>
-            <div style={styles.log}>
-                {lines.map((line, i) => (
-                    <div key={i} style={{
-                        ...styles.line,
-                        color: line.includes("error") ? "#f38ba8"
-                            : line.includes("ok") || line.includes("success") ? "#a6e3a1"
-                                : line.includes("dry-run") ? "#89b4fa"
-                                    : "#cdd6f4",
-                    }}>
-                        {line}
-                    </div>
-                ))}
+            <div className="flex-1 overflow-y-auto p-4 font-mono text-xs custom-scrollbar">
+                {lines.map((line, i) => {
+                    const isError = line.toLowerCase().includes("error") || line.toLowerCase().includes("failed")
+                    const isSuccess = line.toLowerCase().includes("ok") || line.toLowerCase().includes("success")
+                    const isDryRun = line.toLowerCase().includes("dry-run")
+                    
+                    return (
+                        <div key={i} className={`leading-relaxed mb-1 pl-3 border-l-2 ${
+                            isError ? "text-red-400 border-red-500/50 bg-red-500/5 py-0.5"
+                                : isSuccess ? "text-green-400 border-green-500/50"
+                                    : isDryRun ? "text-secondary border-secondary/50"
+                                        : "text-gray-300 border-surface-lighter"
+                        }`}>
+                            {line}
+                        </div>
+                    )
+                })}
                 {running && (
-                    <div style={{ ...styles.line, color: "#6c7086" }}>...</div>
+                    <div className="leading-relaxed mb-1 pl-3 border-l-2 border-surface-lighter text-tertiary animate-pulse">
+                        <span className="w-2 h-4 bg-tertiary inline-block align-middle ml-1"></span>
+                    </div>
                 )}
             </div>
         </div>
     )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-    panel: {
-        borderTop: "1px solid #313244",
-        background: "#13131e",
-        flexShrink: 0,
-        maxHeight: 200,
-        display: "flex",
-        flexDirection: "column",
-    },
-    header: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "6px 16px",
-        borderBottom: "1px solid #313244",
-    },
-    title: {
-        fontSize: 11,
-        color: "#45475a",
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-    },
-    running: {
-        fontSize: 11,
-        color: "#89b4fa",
-    },
-    log: {
-        overflowY: "auto",
-        padding: "8px 16px",
-        fontFamily: "monospace",
-        fontSize: 12,
-        flex: 1,
-    },
-    line: {
-        lineHeight: "1.6",
-        marginBottom: 2,
-    },
 }

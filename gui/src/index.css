@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FF5F1F;
+  --color-secondary: #89CFF0;
+  --color-tertiary: #71797E;
+  --color-neutral: #0A0A0A;
+  --color-surface: #16161a;
+  --color-surface-light: #202025;
+  --color-surface-lighter: #2e2e33;
+}
+
+@layer base {
+  body {
+    @apply bg-neutral text-gray-200 antialiased font-sans;
+    margin: 0;
+  }
+  
+  /* Reset button styles a bit more for the custom look */
+  button {
+    @apply focus:outline-none transition-colors duration-200;
+  }
+}
+
+/* Custom Scrollbar for the sleek terminal feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-lighter);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-tertiary);
+}

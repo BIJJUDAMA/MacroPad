@@ -1,4 +1,6 @@
-import { useRef } from "react"
+import { useRef, useEffect } from "react"
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
 
 interface Props {
     value: string
@@ -6,8 +8,19 @@ interface Props {
 }
 
 export function CodeEditor({ value, onChange }: Props) {
-    const lineCount = value.split("\n").length
+    const lineCount = Math.max(1, value.split("\n").length)
     const taRef = useRef<HTMLTextAreaElement>(null)
+    const gutterRef = useRef<HTMLDivElement>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useGSAP(() => {
+        if (containerRef.current) {
+            gsap.fromTo(containerRef.current,
+                { opacity: 0, y: 5 },
+                { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
+            )
+        }
+    }, [])
 
     function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
         if (e.key === "Tab") {
@@ -24,66 +37,43 @@ export function CodeEditor({ value, onChange }: Props) {
             })
         }
     }
+    
+    // Sync gutter scroll with textarea scroll
+    function handleScroll(e: React.UIEvent<HTMLTextAreaElement>) {
+        if (gutterRef.current) {
+            gutterRef.current.scrollTop = e.currentTarget.scrollTop
+        }
+    }
 
     return (
-        <div style={styles.root}>
-            <div style={styles.gutter}>
+        <div ref={containerRef} className="flex h-full w-full bg-neutral font-mono text-sm leading-relaxed overflow-hidden">
+            {/* Soft left accent indicating active code zone */}
+            <div className="w-1 bg-surface-lighter/50 h-full shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]"></div>
+            
+            <div 
+                ref={gutterRef}
+                className="bg-surface/30 border-r border-surface-lighter py-4 pr-3 pl-2 text-right min-w-[48px] select-none text-tertiary overflow-hidden"
+                style={{ scrollbarWidth: 'none' }}
+            >
                 {Array.from({ length: lineCount }, (_, i) => (
-                    <div key={i} style={styles.lineNum}>{i + 1}</div>
+                    <div key={i} className="h-[1.6em] text-[12px] opacity-40">{i + 1}</div>
                 ))}
             </div>
+            
             <textarea
                 ref={taRef}
-                style={styles.textarea}
+                className="flex-1 bg-transparent text-gray-200 p-4 outline-none resize-none font-mono text-sm leading-relaxed whitespace-pre custom-scrollbar focus:ring-1 focus:ring-inset focus:ring-secondary/10"
+                style={{ tabSize: 4 }}
                 value={value}
                 onChange={e => onChange(e.target.value)}
+                onScroll={handleScroll}
                 onKeyDown={handleKeyDown}
                 spellCheck={false}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
+                placeholder="// Initialize operational sequence..."
             />
         </div>
     )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-    root: {
-        display: "flex",
-        flex: 1,
-        overflow: "hidden",
-        fontFamily: "monospace",
-        fontSize: 13,
-        lineHeight: "1.6",
-    },
-    gutter: {
-        background: "#181825",
-        borderRight: "1px solid #313244",
-        padding: "16px 8px",
-        textAlign: "right",
-        minWidth: 40,
-        overflowY: "hidden",
-        userSelect: "none",
-    },
-    lineNum: {
-        color: "#45475a",
-        fontSize: 12,
-        lineHeight: "1.6",
-        height: "1.6em",
-    },
-    textarea: {
-        flex: 1,
-        background: "#181825",
-        color: "#cdd6f4",
-        border: "none",
-        outline: "none",
-        padding: "16px",
-        resize: "none",
-        fontFamily: "monospace",
-        fontSize: 13,
-        lineHeight: "1.6",
-        overflowY: "auto",
-        whiteSpace: "pre",
-        tabSize: 4,
-    },
 }
