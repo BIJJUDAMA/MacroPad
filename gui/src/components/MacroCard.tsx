@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { MacroInfo } from "../types/macro"
 import { StepEditor } from "./StepEditor"
+import { VariablePromptModal } from "./VariablePromptModal"
 import { Play, Square, Edit3, Copy, Trash2, Clock, Activity, Hash, Layers, FileCode } from 'lucide-react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
@@ -21,6 +22,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
     const [playing, setPlaying] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showEditor, setShowEditor] = useState(false)
+    const [showVarPrompt, setShowVarPrompt] = useState(false)
     const cardRef = useRef<HTMLDivElement>(null)
 
     useGSAP(() => {
@@ -72,9 +74,15 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
         return () => window.removeEventListener("keydown", onKeyDown)
     }, [playing])
 
-    async function handlePlay() {
+    async function handlePlay(vars: Record<string, string> | null = null) {
+        if (!vars && macro.requires && macro.requires.length > 0) {
+            setShowVarPrompt(true)
+            return
+        }
+
         setPlaying(true)
         setError(null)
+        setShowVarPrompt(false)
         try {
             const { getCurrentWindow } = await import("@tauri-apps/api/window")
             const win = getCurrentWindow()
@@ -83,7 +91,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
 
             const result = await tauriInvoke<{ ok: boolean; message: string }>(
                 "play_macro",
-                { path: macro.path, speed: null, dryRun: false }
+                { path: macro.path, speed: null, dryRun: false, vars }
             )
 
             if (!result.ok) {
@@ -132,6 +140,14 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
             {showEditor && (
                 <StepEditor macro={macro} onClose={() => setShowEditor(false)} />
             )}
+            {showVarPrompt && (
+                <VariablePromptModal 
+                    macroName={macro.name} 
+                    requiredVars={macro.requires} 
+                    onConfirm={(vars) => handlePlay(vars)}
+                    onCancel={() => setShowVarPrompt(false)}
+                />
+            )}
             <div ref={cardRef} className="bg-surface-light border border-surface-lighter rounded-xl p-5 mb-4 relative overflow-hidden transition-colors">
                 
                 {playing && (
@@ -167,7 +183,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                     <div className="flex items-center gap-2">
                         <button
                             className={`p-2 rounded-lg transition-all ${playing ? 'bg-secondary/20 text-secondary' : 'bg-surface hover:bg-secondary/10 hover:text-secondary text-gray-400 border border-surface-lighter hover:border-secondary/30'}`}
-                            onClick={handlePlay}
+                            onClick={() => handlePlay()}
                             disabled={playing}
                             title="Play Macro"
                         >

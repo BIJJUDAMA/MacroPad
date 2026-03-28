@@ -12,6 +12,7 @@ pub struct MacroInfo {
     pub event_count: usize,
     pub speed:       f64,
     pub loop_count:  u32,
+    pub requires:    Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,6 +40,7 @@ fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
         event_count: rec.events.len(),
         speed:       rec.playback.speed,
         loop_count:  rec.playback.loop_count,
+        requires:    rec.meta.requires,
     })
 }
 
@@ -64,12 +66,13 @@ async fn play_macro(
     path:    String,
     speed:   Option<f64>,
     dry_run: bool,
+    vars:    Option<std::collections::HashMap<String, String>>,
 ) -> Result<PlaybackResult, String> {
     let cmd = IpcCommand::Play {
         path:      PathBuf::from(&path),
         speed,
         dry_run:   Some(dry_run),
-        vars:      None,
+        vars,
         overrides: None,
     };
 

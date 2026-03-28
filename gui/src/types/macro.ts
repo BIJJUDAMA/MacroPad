@@ -6,6 +6,7 @@ export interface MacroInfo {
     event_count: number
     speed: number
     loop_count: number
+    requires: string[]
 }
 
 export interface PlaybackResult {

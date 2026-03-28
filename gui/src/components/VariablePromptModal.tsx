@@ -1,0 +1,116 @@
+import { useState, useRef } from "react"
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { Play, X, AlertCircle, Hash, Terminal } from 'lucide-react'
+
+interface Props {
+    macroName: string
+    requiredVars: string[]
+    onConfirm: (vars: Record<string, string>) => void
+    onCancel: () => void
+}
+
+export function VariablePromptModal({ macroName, requiredVars, onConfirm, onCancel }: Props) {
+    const [values, setValues] = useState<Record<string, string>>(
+        requiredVars.reduce((acc, v) => ({ ...acc, [v]: "" }), {})
+    )
+    const modalRef = useRef<HTMLDivElement>(null)
+    const overlayRef = useRef<HTMLDivElement>(null)
+
+    useGSAP(() => {
+        const tl = gsap.timeline()
+        tl.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 })
+        tl.fromTo(modalRef.current, 
+            { scale: 0.9, opacity: 0, y: 20 }, 
+            { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" },
+            "-=0.2"
+        )
+    }, [])
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        onConfirm(values)
+    }
+
+    const handleChange = (varName: string, value: string) => {
+        setValues(prev => ({ ...prev, [varName]: value }))
+    }
+
+    return (
+        <div ref={overlayRef} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div 
+                ref={modalRef}
+                className="w-full max-w-md bg-surface border-2 border-secondary/30 rounded-2xl shadow-[0_0_50px_rgba(255,100,0,0.15)] overflow-hidden"
+            >
+                {/* Header */}
+                <div className="bg-secondary/10 border-b border-secondary/20 p-5 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-secondary/20 rounded-lg text-secondary">
+                            <Terminal size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-100 tracking-tight">Input Required</h2>
+                            <p className="text-[10px] text-secondary/60 uppercase font-mono tracking-widest">{macroName}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onCancel}
+                        className="p-2 hover:bg-white/5 rounded-full text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <form onSubmit={handleSubmit} className="p-6">
+                    <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 mb-6 flex gap-3">
+                        <AlertCircle size={18} className="text-blue-400 shrink-0 mt-0.5" />
+                        <p className="text-xs text-blue-200/80 leading-relaxed">
+                            This macro expects runtime variables. Please provide values for the following keys before execution.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {requiredVars.map((v) => (
+                            <div key={v} className="space-y-1.5">
+                                <label className="flex items-center gap-2 text-[11px] font-mono text-tertiary uppercase tracking-wider ml-1">
+                                    <Hash size={10} /> {v}
+                                </label>
+                                <div className="relative group">
+                                    <input
+                                        autoFocus={requiredVars.indexOf(v) === 0}
+                                        type="text"
+                                        value={values[v]}
+                                        onChange={(e) => handleChange(v, e.target.value)}
+                                        placeholder={`Enter value for ${v}...`}
+                                        className="w-full bg-surface-light border border-surface-lighter focus:border-secondary/50 focus:ring-1 focus:ring-secondary/20 rounded-xl px-4 py-3 text-sm text-white font-mono placeholder:text-gray-600 outline-none transition-all"
+                                        required
+                                    />
+                                    <div className="absolute inset-0 rounded-xl bg-secondary/5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="mt-8 flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="flex-1 px-4 py-3 bg-surface hover:bg-white/5 border border-surface-lighter text-gray-400 text-sm font-bold rounded-xl transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-[2] px-4 py-3 bg-secondary hover:bg-secondary-light text-black text-sm font-bold rounded-xl shadow-lg shadow-secondary/10 flex items-center justify-center gap-2 group transition-all"
+                        >
+                            <Play size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                            Start Playback
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
