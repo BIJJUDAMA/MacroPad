@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MacroInfo } from "../types/macro"
 import { StepEditor } from "./StepEditor"
 
@@ -18,6 +18,18 @@ export function MacroCard({ macro, onRefresh: _, onRemove, onDuplicate }: Props)
     const [playing, setPlaying] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showEditor, setShowEditor] = useState(false)
+
+    useEffect(() => {
+        if (!playing) return
+        async function onKeyDown(e: KeyboardEvent) {
+            if (e.key === "Escape") {
+                e.preventDefault()
+                await handleStop()
+            }
+        }
+        window.addEventListener("keydown", onKeyDown)
+        return () => window.removeEventListener("keydown", onKeyDown)
+    }, [playing])
 
     async function handlePlay() {
         setPlaying(true)
@@ -57,6 +69,8 @@ export function MacroCard({ macro, onRefresh: _, onRemove, onDuplicate }: Props)
             await getCurrentWindow().setFocus()
         } catch (e) {
             setError(String(e))
+        } finally {
+            setPlaying(false)
         }
     }
 
@@ -75,8 +89,12 @@ export function MacroCard({ macro, onRefresh: _, onRemove, onDuplicate }: Props)
                         <div style={styles.meta}>created {macro.created}</div>
                     </div>
                     <div style={styles.actions}>
-                        <button style={{ ...styles.btn, ...styles.btnPlay }} onClick={handlePlay} disabled={playing}>
-                            {playing ? "playing..." : "play"}
+                        <button
+                            style={{ ...styles.btn, ...styles.btnPlay }}
+                            onClick={handlePlay}
+                            disabled={playing}
+                        >
+                            {playing ? "playing... (Esc to stop)" : "play"}
                         </button>
                         <button style={{ ...styles.btn, ...styles.btnStop }} onClick={handleStop}>
                             stop

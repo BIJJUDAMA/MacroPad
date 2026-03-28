@@ -2,6 +2,7 @@ use crate::state::SharedState;
 use macropad_ipc::{IpcCommand, IpcResponse};
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::sync::oneshot;
 
 #[cfg(windows)]
 use macropad_ipc::PIPE_NAME;
@@ -79,8 +80,8 @@ async fn start_unix_socket(state: SharedState) -> Result<(), IpcError> {
     println!("[ipc] listening on {}", SOCKET_PATH);
 
     loop {
-        let (stream, _)  = listener.accept().await?;
-        let state_clone  = state.clone();
+        let (stream, _) = listener.accept().await?;
+        let state_clone = state.clone();
         tokio::spawn(async move {
             handle_connection_unix(stream, state_clone).await;
         });
@@ -88,10 +89,7 @@ async fn start_unix_socket(state: SharedState) -> Result<(), IpcError> {
 }
 
 #[cfg(not(windows))]
-async fn handle_connection_unix(
-    stream: tokio::net::UnixStream,
-    state: SharedState,
-) {
+async fn handle_connection_unix(stream: tokio::net::UnixStream, state: SharedState) {
     let (reader, mut writer) = stream.into_split();
     let mut lines = BufReader::new(reader).lines();
 
@@ -171,27 +169,31 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                 s.set_recording();
             }
 
+            let (stop_tx, stop_rx) = oneshot::channel::<()>();
+
+            {
+                let mut s = state.lock().unwrap();
+                s.record_stop_tx = Some(stop_tx);
+            }
+
             let state_clone = state.clone();
             tokio::spawn(async move {
                 match macropad_core::Recorder::start() {
                     Ok(mut recorder) => {
                         let mut events = Vec::new();
 
-                        loop {
-                            tokio::select! {
-                                Some(event) = recorder.rx.recv() => {
-                                    events.push(event);
+                        tokio::select! {
+                            _ = async {
+                                while let Some(e) = recorder.rx.recv().await {
+                                    events.push(e);
                                 }
-                                _ = tokio::time::sleep(
-                                    std::time::Duration::from_millis(100)
-                                ) => {
-                                    let s = state_clone.lock().unwrap();
-                                    if s.status != crate::state::PlaybackStatus::Recording {
-                                        break;
-                                    }
-                                }
+                            } => {}
+                            _ = stop_rx => {
+                                println!("[daemon] stop signal received");
                             }
                         }
+
+                        println!("[daemon] recording stopped, {} events captured", events.len());
 
                         let rec = macropad_core::models::NitsRec {
                             meta: macropad_core::models::Metadata {
@@ -211,9 +213,19 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
 
                         if let Err(e) = macropad_core::save(&rec, &output_path) {
                             eprintln!("[daemon] save error: {}", e);
+                        } else {
+                            println!("[daemon] saved to {:?}", output_path);
                         }
+
+                        let mut s = state_clone.lock().unwrap();
+                        s.record_stop_tx = None;
+                        s.set_idle();
                     }
-                    Err(e) => eprintln!("[daemon] recorder error: {}", e),
+                    Err(e) => {
+                        eprintln!("[daemon] recorder error: {}", e);
+                        let mut s = state_clone.lock().unwrap();
+                        s.set_idle();
+                    }
                 }
             });
 
@@ -221,7 +233,12 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
         }
 
         IpcCommand::StopRecord => {
-            state.lock().unwrap().set_idle();
+            let mut s = state.lock().unwrap();
+            if let Some(tx) = s.record_stop_tx.take() {
+                let _ = tx.send(());
+                println!("[daemon] sent stop signal to recorder");
+            }
+            s.set_idle();
             IpcResponse::Ok
         }
 

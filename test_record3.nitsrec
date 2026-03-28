@@ -1,0 +1,1002 @@
+[meta]
+version = 1
+name = "test_record3"
+created = "2026-03-17"
+tags = []
+
+[playback]
+speed = 1.0
+wait_timeout_ms = 15000
+loop_count = 1
+
+[[events]]
+type = "mouse_move"
+time_ms = 19
+x = 999
+y = 542
+
+[[events]]
+type = "mouse_move"
+time_ms = 20
+x = 999
+y = 542
+
+[[events]]
+type = "mouse_move"
+time_ms = 35
+x = 1000
+y = 542
+
+[[events]]
+type = "mouse_move"
+time_ms = 35
+x = 1000
+y = 542
+
+[[events]]
+type = "mouse_move"
+time_ms = 611
+x = 1007
+y = 542
+
+[[events]]
+type = "mouse_move"
+time_ms = 611
+x = 1007
+y = 542
+
+[[events]]
+type = "mouse_move"
+time_ms = 619
+x = 1011
+y = 541
+
+[[events]]
+type = "mouse_move"
+time_ms = 619
+x = 1011
+y = 541
+
+[[events]]
+type = "mouse_move"
+time_ms = 627
+x = 1019
+y = 537
+
+[[events]]
+type = "mouse_move"
+time_ms = 627
+x = 1019
+y = 537
+
+[[events]]
+type = "mouse_move"
+time_ms = 635
+x = 1030
+y = 537
+
+[[events]]
+type = "mouse_move"
+time_ms = 635
+x = 1030
+y = 537
+
+[[events]]
+type = "mouse_move"
+time_ms = 643
+x = 1044
+y = 532
+
+[[events]]
+type = "mouse_move"
+time_ms = 643
+x = 1044
+y = 532
+
+[[events]]
+type = "mouse_move"
+time_ms = 651
+x = 1063
+y = 527
+
+[[events]]
+type = "mouse_move"
+time_ms = 651
+x = 1063
+y = 527
+
+[[events]]
+type = "mouse_move"
+time_ms = 659
+x = 1094
+y = 524
+
+[[events]]
+type = "mouse_move"
+time_ms = 659
+x = 1094
+y = 524
+
+[[events]]
+type = "mouse_move"
+time_ms = 667
+x = 1129
+y = 517
+
+[[events]]
+type = "mouse_move"
+time_ms = 667
+x = 1129
+y = 517
+
+[[events]]
+type = "mouse_move"
+time_ms = 675
+x = 1163
+y = 512
+
+[[events]]
+type = "mouse_move"
+time_ms = 676
+x = 1163
+y = 512
+
+[[events]]
+type = "mouse_move"
+time_ms = 683
+x = 1199
+y = 506
+
+[[events]]
+type = "mouse_move"
+time_ms = 683
+x = 1199
+y = 506
+
+[[events]]
+type = "mouse_move"
+time_ms = 691
+x = 1238
+y = 494
+
+[[events]]
+type = "mouse_move"
+time_ms = 691
+x = 1238
+y = 494
+
+[[events]]
+type = "mouse_move"
+time_ms = 699
+x = 1270
+y = 485
+
+[[events]]
+type = "mouse_move"
+time_ms = 699
+x = 1270
+y = 485
+
+[[events]]
+type = "mouse_move"
+time_ms = 707
+x = 1305
+y = 474
+
+[[events]]
+type = "mouse_move"
+time_ms = 707
+x = 1305
+y = 474
+
+[[events]]
+type = "mouse_move"
+time_ms = 715
+x = 1336
+y = 464
+
+[[events]]
+type = "mouse_move"
+time_ms = 715
+x = 1336
+y = 464
+
+[[events]]
+type = "mouse_move"
+time_ms = 723
+x = 1360
+y = 458
+
+[[events]]
+type = "mouse_move"
+time_ms = 723
+x = 1360
+y = 458
+
+[[events]]
+type = "mouse_move"
+time_ms = 731
+x = 1386
+y = 445
+
+[[events]]
+type = "mouse_move"
+time_ms = 731
+x = 1386
+y = 445
+
+[[events]]
+type = "mouse_move"
+time_ms = 739
+x = 1408
+y = 438
+
+[[events]]
+type = "mouse_move"
+time_ms = 739
+x = 1408
+y = 438
+
+[[events]]
+type = "mouse_move"
+time_ms = 747
+x = 1424
+y = 434
+
+[[events]]
+type = "mouse_move"
+time_ms = 747
+x = 1424
+y = 434
+
+[[events]]
+type = "mouse_move"
+time_ms = 755
+x = 1446
+y = 428
+
+[[events]]
+type = "mouse_move"
+time_ms = 755
+x = 1446
+y = 428
+
+[[events]]
+type = "mouse_move"
+time_ms = 763
+x = 1464
+y = 426
+
+[[events]]
+type = "mouse_move"
+time_ms = 763
+x = 1464
+y = 426
+
+[[events]]
+type = "mouse_move"
+time_ms = 771
+x = 1484
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 771
+x = 1484
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 779
+x = 1499
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 779
+x = 1499
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 787
+x = 1514
+y = 421
+
+[[events]]
+type = "mouse_move"
+time_ms = 788
+x = 1514
+y = 421
+
+[[events]]
+type = "mouse_move"
+time_ms = 795
+x = 1532
+y = 418
+
+[[events]]
+type = "mouse_move"
+time_ms = 795
+x = 1532
+y = 418
+
+[[events]]
+type = "mouse_move"
+time_ms = 803
+x = 1548
+y = 418
+
+[[events]]
+type = "mouse_move"
+time_ms = 803
+x = 1548
+y = 418
+
+[[events]]
+type = "mouse_move"
+time_ms = 811
+x = 1566
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 811
+x = 1566
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 819
+x = 1577
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 819
+x = 1577
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 827
+x = 1589
+y = 414
+
+[[events]]
+type = "mouse_move"
+time_ms = 827
+x = 1589
+y = 414
+
+[[events]]
+type = "mouse_move"
+time_ms = 836
+x = 1601
+y = 411
+
+[[events]]
+type = "mouse_move"
+time_ms = 837
+x = 1601
+y = 411
+
+[[events]]
+type = "mouse_move"
+time_ms = 843
+x = 1606
+y = 411
+
+[[events]]
+type = "mouse_move"
+time_ms = 843
+x = 1606
+y = 411
+
+[[events]]
+type = "mouse_move"
+time_ms = 851
+x = 1617
+y = 412
+
+[[events]]
+type = "mouse_move"
+time_ms = 851
+x = 1617
+y = 412
+
+[[events]]
+type = "mouse_move"
+time_ms = 859
+x = 1623
+y = 414
+
+[[events]]
+type = "mouse_move"
+time_ms = 859
+x = 1623
+y = 414
+
+[[events]]
+type = "mouse_move"
+time_ms = 867
+x = 1629
+y = 414
+
+[[events]]
+type = "mouse_move"
+time_ms = 867
+x = 1629
+y = 414
+
+[[events]]
+type = "mouse_move"
+time_ms = 875
+x = 1633
+y = 415
+
+[[events]]
+type = "mouse_move"
+time_ms = 875
+x = 1633
+y = 415
+
+[[events]]
+type = "mouse_move"
+time_ms = 883
+x = 1635
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 883
+x = 1635
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 891
+x = 1636
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 891
+x = 1636
+y = 416
+
+[[events]]
+type = "mouse_move"
+time_ms = 899
+x = 1638
+y = 417
+
+[[events]]
+type = "mouse_move"
+time_ms = 899
+x = 1638
+y = 417
+
+[[events]]
+type = "mouse_move"
+time_ms = 907
+x = 1639
+y = 417
+
+[[events]]
+type = "mouse_move"
+time_ms = 907
+x = 1639
+y = 417
+
+[[events]]
+type = "mouse_move"
+time_ms = 1051
+x = 1640
+y = 417
+
+[[events]]
+type = "mouse_move"
+time_ms = 1051
+x = 1640
+y = 417
+
+[[events]]
+type = "mouse_move"
+time_ms = 1059
+x = 1646
+y = 419
+
+[[events]]
+type = "mouse_move"
+time_ms = 1059
+x = 1646
+y = 419
+
+[[events]]
+type = "mouse_move"
+time_ms = 1067
+x = 1651
+y = 419
+
+[[events]]
+type = "mouse_move"
+time_ms = 1067
+x = 1651
+y = 419
+
+[[events]]
+type = "mouse_move"
+time_ms = 1075
+x = 1659
+y = 421
+
+[[events]]
+type = "mouse_move"
+time_ms = 1075
+x = 1659
+y = 421
+
+[[events]]
+type = "mouse_move"
+time_ms = 1083
+x = 1669
+y = 422
+
+[[events]]
+type = "mouse_move"
+time_ms = 1083
+x = 1669
+y = 422
+
+[[events]]
+type = "mouse_move"
+time_ms = 1091
+x = 1676
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1092
+x = 1676
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1099
+x = 1681
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1099
+x = 1681
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1107
+x = 1686
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1107
+x = 1686
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1115
+x = 1694
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1115
+x = 1694
+y = 423
+
+[[events]]
+type = "mouse_move"
+time_ms = 1123
+x = 1701
+y = 424
+
+[[events]]
+type = "mouse_move"
+time_ms = 1123
+x = 1701
+y = 424
+
+[[events]]
+type = "mouse_move"
+time_ms = 1131
+x = 1709
+y = 427
+
+[[events]]
+type = "mouse_move"
+time_ms = 1131
+x = 1709
+y = 427
+
+[[events]]
+type = "mouse_move"
+time_ms = 1139
+x = 1719
+y = 427
+
+[[events]]
+type = "mouse_move"
+time_ms = 1139
+x = 1719
+y = 427
+
+[[events]]
+type = "mouse_move"
+time_ms = 1147
+x = 1730
+y = 429
+
+[[events]]
+type = "mouse_move"
+time_ms = 1147
+x = 1730
+y = 429
+
+[[events]]
+type = "mouse_move"
+time_ms = 1155
+x = 1743
+y = 432
+
+[[events]]
+type = "mouse_move"
+time_ms = 1155
+x = 1743
+y = 432
+
+[[events]]
+type = "mouse_move"
+time_ms = 1163
+x = 1755
+y = 433
+
+[[events]]
+type = "mouse_move"
+time_ms = 1163
+x = 1755
+y = 433
+
+[[events]]
+type = "mouse_move"
+time_ms = 1171
+x = 1762
+y = 434
+
+[[events]]
+type = "mouse_move"
+time_ms = 1171
+x = 1762
+y = 434
+
+[[events]]
+type = "mouse_move"
+time_ms = 1179
+x = 1772
+y = 436
+
+[[events]]
+type = "mouse_move"
+time_ms = 1179
+x = 1772
+y = 436
+
+[[events]]
+type = "mouse_move"
+time_ms = 1187
+x = 1772
+y = 436
+
+[[events]]
+type = "mouse_move"
+time_ms = 1187
+x = 1772
+y = 436
+
+[[events]]
+type = "mouse_move"
+time_ms = 1195
+x = 1774
+y = 436
+
+[[events]]
+type = "mouse_move"
+time_ms = 1195
+x = 1774
+y = 436
+
+[[events]]
+type = "mouse_down"
+time_ms = 1419
+button = "left"
+
+[[events]]
+type = "mouse_down"
+time_ms = 1419
+button = "left"
+
+[[events]]
+type = "mouse_move"
+time_ms = 1427
+x = 1774
+y = 436
+
+[[events]]
+type = "mouse_move"
+time_ms = 1428
+x = 1774
+y = 436
+
+[[events]]
+type = "mouse_up"
+time_ms = 1492
+button = "left"
+
+[[events]]
+type = "mouse_up"
+time_ms = 1492
+button = "left"
+
+[[events]]
+type = "mouse_down"
+time_ms = 1596
+button = "left"
+
+[[events]]
+type = "mouse_down"
+time_ms = 1596
+button = "left"
+
+[[events]]
+type = "mouse_up"
+time_ms = 1676
+button = "left"
+
+[[events]]
+type = "mouse_up"
+time_ms = 1676
+button = "left"
+
+[[events]]
+type = "mouse_down"
+time_ms = 1779
+button = "left"
+
+[[events]]
+type = "mouse_down"
+time_ms = 1779
+button = "left"
+
+[[events]]
+type = "mouse_up"
+time_ms = 1860
+button = "left"
+
+[[events]]
+type = "mouse_up"
+time_ms = 1860
+button = "left"
+
+[[events]]
+type = "mouse_move"
+time_ms = 2099
+x = 1774
+y = 437
+
+[[events]]
+type = "mouse_move"
+time_ms = 2099
+x = 1774
+y = 437
+
+[[events]]
+type = "key_down"
+time_ms = 3032
+key = "h"
+
+[[events]]
+type = "key_down"
+time_ms = 3035
+key = "h"
+
+[[events]]
+type = "key_up"
+time_ms = 3108
+key = "h"
+
+[[events]]
+type = "key_up"
+time_ms = 3108
+key = "h"
+
+[[events]]
+type = "key_down"
+time_ms = 3123
+key = "e"
+
+[[events]]
+type = "key_down"
+time_ms = 3127
+key = "e"
+
+[[events]]
+type = "key_up"
+time_ms = 3194
+key = "e"
+
+[[events]]
+type = "key_up"
+time_ms = 3195
+key = "e"
+
+[[events]]
+type = "key_down"
+time_ms = 3260
+key = "y"
+
+[[events]]
+type = "key_down"
+time_ms = 3263
+key = "y"
+
+[[events]]
+type = "key_up"
+time_ms = 3338
+key = "y"
+
+[[events]]
+type = "key_up"
+time_ms = 3338
+key = "y"
+
+[[events]]
+type = "key_down"
+time_ms = 3830
+key = "h"
+
+[[events]]
+type = "key_down"
+time_ms = 3832
+key = "h"
+
+[[events]]
+type = "key_up"
+time_ms = 3895
+key = "h"
+
+[[events]]
+type = "key_up"
+time_ms = 3896
+key = "h"
+
+[[events]]
+type = "key_down"
+time_ms = 3908
+key = "e"
+
+[[events]]
+type = "key_down"
+time_ms = 3910
+key = "e"
+
+[[events]]
+type = "key_up"
+time_ms = 3992
+key = "e"
+
+[[events]]
+type = "key_up"
+time_ms = 3993
+key = "e"
+
+[[events]]
+type = "key_down"
+time_ms = 4052
+key = "y"
+
+[[events]]
+type = "key_down"
+time_ms = 4055
+key = "y"
+
+[[events]]
+type = "key_up"
+time_ms = 4130
+key = "y"
+
+[[events]]
+type = "key_up"
+time_ms = 4130
+key = "y"
+
+[[events]]
+type = "key_down"
+time_ms = 7011
+key = "f9"
+
+[[events]]
+type = "key_down"
+time_ms = 7013
+key = "f9"
+
+[[events]]
+type = "key_up"
+time_ms = 7126
+key = "f9"
+
+[[events]]
+type = "key_up"
+time_ms = 7126
+key = "f9"
+
+[[events]]
+type = "key_down"
+time_ms = 7193
+key = "alt"
+
+[[events]]
+type = "key_down"
+time_ms = 7194
+key = "alt"
+
+[[events]]
+type = "key_down"
+time_ms = 7245
+key = "tab"
+
+[[events]]
+type = "key_down"
+time_ms = 7249
+key = "tab"
+
+[[events]]
+type = "key_up"
+time_ms = 7306
+key = "alt"
+
+[[events]]
+type = "key_up"
+time_ms = 7307
+key = "alt"
+
+[[events]]
+type = "key_up"
+time_ms = 7372
+key = "tab"
+
+[[events]]
+type = "key_up"
+time_ms = 7372
+key = "tab"
+
+[[events]]
+type = "key_down"
+time_ms = 7877
+key = "f9"
+
+[[events]]
+type = "key_down"
+time_ms = 7878
+key = "f9"
+
+[[events]]
+type = "key_up"
+time_ms = 7975
+key = "f9"
+
+[[events]]
+type = "key_up"
+time_ms = 7975
+key = "f9"

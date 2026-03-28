@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { MacroCard } from "./MacroCard"
 import { useDaemonStatus, useMacroList } from "../hooks/useDaemon"
+import { useRecording } from "../hooks/useRecording"
+import { RecordingIndicator } from "./RecordingIndicator"
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -18,8 +20,13 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
     const [search, setSearch] = useState("")
     const [tagFilter, setTagFilter] = useState<string | null>(null)
 
-    const allTags = Array.from(new Set(macros.flatMap(m => m.tags))).sort()
+    const onRecordSaved = useCallback((path: string) => {
+        addMacro(path)
+    }, [addMacro])
 
+    const { state: recState, error: recError, startRecording, stopRecording } = useRecording(onRecordSaved)
+
+    const allTags = Array.from(new Set(macros.flatMap(m => m.tags))).sort()
     const filtered = macros.filter(m => {
         const matchSearch = m.name.toLowerCase().includes(search.toLowerCase())
         const matchTag = tagFilter ? m.tags.includes(tagFilter) : true
@@ -49,10 +56,26 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                     </span>
                 </div>
                 <div style={styles.right}>
+                    <button
+                        style={{
+                            ...styles.btnRecord,
+                            opacity: recState !== "idle" ? 0.5 : 1,
+                        }}
+                        onClick={startRecording}
+                        disabled={recState !== "idle"}
+                    >
+                        {recState === "idle" ? "record" : recState === "recording" ? "recording..." : "saving..."}
+                    </button>
                     <button style={styles.btnAdd} onClick={handleBrowse}>+ add macro</button>
                     <button style={styles.btnRefresh} onClick={refresh}>refresh</button>
                 </div>
             </div>
+
+            <RecordingIndicator
+                state={recState}
+                onStop={stopRecording}
+                error={recError}
+            />
 
             <div style={styles.filters}>
                 <input
@@ -89,7 +112,7 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
             {!loading && !error && filtered.length === 0 && (
                 <div style={styles.state}>
                     {macros.length === 0
-                        ? "no macros loaded — click + add macro or start recording"
+                        ? "no macros loaded — click record to capture or + add macro to load"
                         : "no macros match your search"}
                 </div>
             )}
@@ -116,6 +139,7 @@ const styles: Record<string, React.CSSProperties> = {
     right: { display: "flex", gap: 8 },
     title: { fontSize: 22, fontWeight: 700, color: "#cdd6f4", letterSpacing: "0.02em" },
     statusBadge: { borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600 },
+    btnRecord: { background: "#f38ba8", color: "#1e1e2e", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "monospace" },
     btnAdd: { background: "#89b4fa", color: "#1e1e2e", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "monospace" },
     btnRefresh: { background: "#313244", color: "#cdd6f4", border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontFamily: "monospace" },
     filters: { marginBottom: 20 },
