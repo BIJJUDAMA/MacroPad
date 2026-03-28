@@ -1,12 +1,12 @@
 use crate::ast::*;
 use crate::variables::Scope;
-use macropad_ipc::{IpcCommand, IpcResponse};
+use macropad_ipc::{IpcCommand, IpcResponse, PlaybackOverrides};
+use macropad_ipc::client::{send_command, ClientError};
 use platform::screenshot::{PixelChecker, Rgba};
 use platform::window::{wait_for_window, WindowQuery};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use thiserror::Error;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::time::sleep;
 
 #[derive(Debug, Error)]
@@ -21,6 +21,12 @@ pub enum RunnerError {
     LoopCapHit(u32),
     #[error("script error: {0}")]
     Generic(String),
+}
+
+impl From<ClientError> for RunnerError {
+    fn from(e: ClientError) -> Self {
+        RunnerError::Ipc(e.to_string())
+    }
 }
 
 pub struct Runner {
@@ -73,7 +79,7 @@ impl Runner {
                     }
                 }
 
-                Statement::Run { path, args: _, is_async: _ } => {
+                Statement::Run { path, args, is_async } => {
                     let resolved   = scope.resolve_expr(path);
                     let macro_path = self.resolve_path(&resolved);
 
@@ -84,17 +90,58 @@ impl Runner {
                         });
                     }
 
+                    // Collect RunArgs into overrides and vars
+                    let mut overrides = PlaybackOverrides::default();
+                    let mut vars = std::collections::HashMap::<String, String>::new();
+
+                    for arg in args {
+                        let val = scope.resolve_expr(&arg.value);
+                        match arg.key.as_str() {
+                            "speed"            => overrides.speed = val.parse().ok(),
+                            "loop_count"       => overrides.loop_count = val.parse().ok(),
+                            "skip_mouse_move"  => overrides.skip_mouse_move = val.parse().ok(),
+                            "scale_to_current" => overrides.scale_to_current = val.parse().ok(),
+                            "wait_for_window"  => overrides.wait_for_window = Some(val),
+                            "wait_timeout_ms"  => overrides.wait_timeout_ms = val.parse().ok(),
+                            // Anything else is treated as a runtime variable injection
+                            other => { vars.insert(other.to_string(), val); }
+                        }
+                    }
+
                     if self.dry_run {
-                        println!("[dry-run] run {:?}", macro_path);
+                        println!("[dry-run] run {:?} (overrides: {:?}, vars: {:?})", macro_path, overrides, vars);
                         scope.set_last_result(true);
                         return Ok(());
                     }
 
-                    let result = self.send_play(&macro_path, None).await;
-                    scope.set_last_result(result.is_ok());
+                    let cmd = IpcCommand::Play {
+                        path:      macro_path,
+                        speed:     overrides.speed,
+                        dry_run:   Some(false),
+                        vars:      if vars.is_empty() { None } else { Some(vars) },
+                        overrides: Some(overrides),
+                    };
 
-                    if let Err(e) = result {
-                        eprintln!("[script] run error: {}", e);
+                    if *is_async {
+                        // Fire and forget — don't wait for completion
+                        tokio::spawn(async move {
+                            let _ = send_command(cmd).await;
+                        });
+                        scope.set_last_result(true);
+                    } else {
+                        let result = send_command(cmd).await;
+                        match result {
+                            Ok(IpcResponse::Ok) => scope.set_last_result(true),
+                            Ok(IpcResponse::Error { message }) => {
+                                eprintln!("[script] run error: {}", message);
+                                scope.set_last_result(false);
+                            }
+                            Ok(_)   => scope.set_last_result(true),
+                            Err(e)  => {
+                                eprintln!("[script] ipc error: {}", e);
+                                scope.set_last_result(false);
+                            }
+                        }
                     }
                 }
 
@@ -239,82 +286,5 @@ impl Runner {
             return PathBuf::from(home).join(&raw[2..]);
         }
         self.script_dir.join(p)
-    }
-
-    async fn send_play(
-        &self,
-        path: &Path,
-        speed: Option<f64>,
-    ) -> Result<(), RunnerError> {
-        let cmd = IpcCommand::Play {
-            path:    path.to_path_buf(),
-            speed,
-            dry_run: Some(false),
-        };
-
-        let mut json = serde_json::to_string(&cmd)
-            .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-        json.push('\n');
-
-        #[cfg(windows)]
-        {
-            use tokio::net::windows::named_pipe::ClientOptions;
-
-            let mut pipe = ClientOptions::new()
-                .open(macropad_ipc::PIPE_NAME)
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            pipe.write_all(json.as_bytes())
-                .await
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            let mut reader = BufReader::new(&mut pipe);
-            let mut line   = String::new();
-            reader
-                .read_line(&mut line)
-                .await
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            let resp: IpcResponse = serde_json::from_str(line.trim())
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            match resp {
-                IpcResponse::Ok                  => Ok(()),
-                IpcResponse::Error { message }   => Err(RunnerError::Ipc(message)),
-                _                                => Ok(()),
-            }
-        }
-
-        #[cfg(not(windows))]
-        {
-            use tokio::net::UnixStream;
-
-            let stream = UnixStream::connect(macropad_ipc::SOCKET_PATH)
-                .await
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            let (reader, mut writer) = stream.into_split();
-
-            writer
-                .write_all(json.as_bytes())
-                .await
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            let mut reader = BufReader::new(reader);
-            let mut line   = String::new();
-            reader
-                .read_line(&mut line)
-                .await
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            let resp: IpcResponse = serde_json::from_str(line.trim())
-                .map_err(|e| RunnerError::Ipc(e.to_string()))?;
-
-            match resp {
-                IpcResponse::Ok                => Ok(()),
-                IpcResponse::Error { message } => Err(RunnerError::Ipc(message)),
-                _                              => Ok(()),
-            }
-        }
     }
 }

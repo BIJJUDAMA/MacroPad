@@ -3,7 +3,7 @@ import { CodeEditor } from "./CodeEditor"
 import { BlockEditor } from "./BlockEditor"
 import { ScriptLogPanel } from "./ScriptLogPanel"
 import { ScriptView, BlockStatement } from "../types/script"
-import { Play, PlaySquare, Save, FilePlus, FolderOpen, Code2, Blocks } from 'lucide-react'
+import { Play, PlaySquare, Save, FilePlus, FolderOpen, Code2, Blocks, Mic, Eye } from 'lucide-react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 
@@ -54,7 +54,12 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
     const [logLines, setLogLines] = useState<string[]>([])
     const [runtimeVars, setRuntimeVars] = useState<{key: string, value: string}[]>([])
     
+    const [isRecording, setIsRecording] = useState(false)
+    const [pendingMacroPath, setPendingMacroPath] = useState<string | null>(null)
+    const [activeMacroInfo, setActiveMacroInfo] = useState<{path: string, events: any[]} | null>(null)
+    
     const viewContainerRef = useRef<HTMLDivElement>(null)
+    const editorRef = useRef<HTMLTextAreaElement>(null)
 
     useGSAP(() => {
         if (viewContainerRef.current) {
@@ -128,6 +133,79 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             setError(String(e))
         } finally {
             setSaving(false)
+        }
+    }
+
+    async function handleRecordHere() {
+        if (isRecording) {
+            try {
+                await tauriInvoke("stop_record")
+                setIsRecording(false)
+                if (pendingMacroPath && editorRef.current) {
+                    const ta = editorRef.current
+                    const start = ta.selectionStart
+                    const end = ta.selectionEnd
+                    const filename = pendingMacroPath.split(/[\\/]/).pop()
+                    const insertion = `run "${filename}"\n`
+                    const next = source.substring(0, start) + insertion + source.substring(end)
+                    setSource(next)
+                    
+                    // Force refresh source if in block view too? 
+                    // handleViewToggle("code") already does this if we switch.
+                }
+                setPendingMacroPath(null)
+            } catch (e) {
+                setError(String(e))
+            }
+            return
+        }
+
+        try {
+            const p = await tauriInvoke<string | null>("new_nitsrec")
+            if (!p) return
+            
+            await tauriInvoke("start_record", { path: p })
+            setPendingMacroPath(p)
+            setIsRecording(true)
+        } catch (e) {
+            setError(String(e))
+        }
+    }
+
+    async function handlePeek() {
+        if (!editorRef.current) return
+        const ta = editorRef.current
+        const value = ta.value
+        const start = ta.selectionStart
+        
+        // Find current line
+        const lines = value.split("\n")
+        let currentPos = 0
+        let currentLine = ""
+        for (const line of lines) {
+            if (currentPos <= start && start <= currentPos + line.length) {
+                currentLine = line
+                break
+            }
+            currentPos += line.length + 1
+        }
+
+        // Match run "path.nitsrec"
+        const match = currentLine.match(/run\s+"([^"]+)"/)
+        if (match) {
+            const macroName = match[1]
+            try {
+                // We need to resolve the path. Assume it's in the same dir as the script for now
+                // or just browse? Better to just use load_events if we can find it.
+                // For simplicity, let's assume it's a relative path in the same dir.
+                const fullPath = scriptDir ? `${scriptDir}/${macroName}` : macroName
+                const events = await tauriInvoke<any[]>("load_events", { path: fullPath })
+                setActiveMacroInfo({ path: macroName, events })
+            } catch (e) {
+                setError(`Could not peek ${macroName}: ${e}`)
+            }
+        } else {
+            setError("Cursor must be on a 'run \"...\"' line to peek.")
         }
     }
 
@@ -245,7 +323,24 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
                         {running ? "Running (Esc)" : "Execute"}
                     </button>
                     
-                    {/* Minimal Save indicator icon */}
+                    <button 
+                        className={`p-2 border rounded-lg transition-colors ${isRecording ? 'bg-red-500/20 border-red-500/40 text-red-500 animate-pulse' : 'bg-surface border-surface-lighter text-tertiary hover:text-gray-200'}`}
+                        onClick={handleRecordHere}
+                        title={isRecording ? "Stop & Insert Recording" : "Record Macro Here"}
+                    >
+                        <Mic size={18} />
+                    </button>
+
+                    <button 
+                        className="p-2 border border-surface-lighter hover:border-tertiary rounded-lg text-tertiary hover:text-gray-200 transition-colors bg-surface"
+                        onClick={handlePeek}
+                        title="Peek Macro Events"
+                    >
+                        <Eye size={18} />
+                    </button>
+
+                    <div className="w-px h-6 bg-surface-lighter"></div>
+
                     <button 
                         className={`p-2 border rounded-lg transition-colors ${saved ? 'bg-secondary/20 border-secondary/40 text-secondary' : 'bg-surface border-surface-lighter text-tertiary hover:text-gray-200'}`}
                         onClick={handleSave} 
@@ -288,7 +383,35 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
                         {view === "code" ? (
                             <div className="h-full w-full [&_textarea]:bg-transparent [&_textarea]:font-mono [&_textarea]:text-sm [&_textarea]:text-gray-300 [&_textarea]:p-6">
                                 {/* CodeEditor will inherit styling if we wrap it properly or just rewrite it later */}
-                                <CodeEditor value={source} onChange={setSource} />
+                                {/* CodeEditor will inherit styling if we wrap it properly or just rewrite it later */}
+                                <CodeEditor ref={editorRef} value={source} onChange={setSource} />
+
+                                {activeMacroInfo && (
+                                    <div className="absolute top-2 right-2 w-72 max-h-[80%] bg-neutral/95 backdrop-blur border border-surface-lighter rounded-xl shadow-2xl p-4 overflow-hidden flex flex-col z-50">
+                                        <div className="flex justify-between items-center mb-3 border-b border-surface-lighter pb-2 shrink-0">
+                                            <div className="flex items-center gap-2">
+                                                <Eye size={14} className="text-secondary" />
+                                                <span className="text-xs font-bold text-gray-200 truncate max-w-[180px]">{activeMacroInfo.path}</span>
+                                            </div>
+                                            <button onClick={() => setActiveMacroInfo(null)} className="text-tertiary hover:text-gray-100 text-lg">&times;</button>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar text-[10px] font-mono space-y-1 pr-1">
+                                            {activeMacroInfo.events.map((e, idx) => (
+                                                <div key={idx} className="flex gap-2 text-tertiary border-b border-surface-lighter/10 py-0.5">
+                                                    <span className="opacity-30">{idx + 1}</span>
+                                                    <span className="text-secondary">{e.type}:</span>
+                                                    <span className="truncate">{JSON.stringify(e).substring(0, 40)}...</span>
+                                                </div>
+                                            ))}
+                                            {activeMacroInfo.events.length === 0 && (
+                                                <div className="py-4 text-center opacity-40 italic">No events found</div>
+                                            )}
+                                        </div>
+                                        <div className="mt-3 text-[9px] text-tertiary text-center uppercase tracking-tighter shrink-0 pt-2 border-t border-surface-lighter/20">
+                                            {activeMacroInfo.events.length} Operational Steps
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <BlockEditor blocks={blocks} onChange={setBlocks} scriptDir={scriptDir} />

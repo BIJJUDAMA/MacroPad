@@ -42,6 +42,7 @@ pub async fn cmd_play(
     path: PathBuf,
     speed: Option<f64>,
     dry_run: bool,
+    var: Vec<(String, String)>,
 ) -> Result<(), ClientError> {
     if !path.exists() {
         eprintln!(
@@ -53,10 +54,14 @@ pub async fn cmd_play(
 
     println!("[macropad] playing: {}", path.display());
 
+    let vars: std::collections::HashMap<String, String> = var.into_iter().collect();
+
     match send_command(IpcCommand::Play {
         path,
         speed,
         dry_run: Some(dry_run),
+        vars: Some(vars),
+        overrides: None, // We can add flag support for specific overrides later if needed
     }).await? {
         IpcResponse::Ok => {
             println!("[macropad] playback started");
@@ -201,6 +206,48 @@ pub async fn cmd_history(path: PathBuf) -> Result<(), ClientError> {
         }
         Err(e) => {
             eprintln!("[macropad] error reading history: {}", e);
+            Ok(())
+        }
+    }
+}
+
+pub async fn cmd_run(
+    path: PathBuf,
+    dry_run: bool,
+    var: Vec<(String, String)>,
+) -> Result<(), ClientError> {
+    if !path.exists() {
+        eprintln!(
+            "[macropad] error: file not found\n           resolved to: {}",
+            path.display()
+        );
+        return Ok(());
+    }
+
+    if !path.to_string_lossy().ends_with(".nitscript") {
+        eprintln!("[macropad] warning: file does not have .nitscript extension");
+    }
+
+    println!("[macropad] running script: {}", path.display());
+    if dry_run {
+        println!("[macropad] (dry-run mode)");
+    }
+
+    let vars = if var.is_empty() {
+        None
+    } else {
+        let map: std::collections::HashMap<String, String> = var.into_iter().collect();
+        println!("[macropad] injecting {} variable(s)", map.len());
+        Some(map)
+    };
+
+    match script::run_script(&path, dry_run, vars).await {
+        Ok(()) => {
+            println!("[macropad] script completed successfully");
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("[macropad] script error: {}", e);
             Ok(())
         }
     }

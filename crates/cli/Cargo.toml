@@ -12,3 +12,4 @@ clap          = { version = "4", features = ["derive"] }
 macropad-core = { path = "../core" }
 macropad-ipc  = { path = "../ipc" }
 platform      = { path = "../platform" }
+script        = { path = "../script" }

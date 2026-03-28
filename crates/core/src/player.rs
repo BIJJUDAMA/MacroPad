@@ -1,4 +1,5 @@
 use crate::models::{Event, EventType, MouseButton, NitsRec};
+use std::collections::HashMap;
 use enigo::{
     Button, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings,
 };
@@ -80,6 +81,7 @@ pub async fn play(
     speed:    Option<f64>,
     dry_run:  bool,
     abort_rx: watch::Receiver<bool>,
+    vars:     Option<&HashMap<String, String>>,
 ) -> Result<(), PlayerError> {
     let speed       = speed.unwrap_or(rec.playback.speed).max(0.01);
     let loop_count  = rec.playback.loop_count.max(1);
@@ -99,6 +101,21 @@ pub async fn play(
     } else {
         None
     };
+
+    // Shared "Wait for Window" logic consolidated in the player
+    if let Some(target_window) = &rec.playback.wait_for_window {
+        if !dry_run {
+            let query = platform::window::WindowQuery::new(target_window)
+                .timeout(rec.playback.wait_timeout_ms);
+            // Ignore failure here? Or return error? 
+            // Better to return error if window not found.
+            platform::window::wait_for_window(query)
+                .await
+                .map_err(|e| PlayerError::UnknownKey(format!("window wait failed: {}", e)))?;
+        } else {
+            println!("[dry-run] would wait for window: {}", target_window);
+        }
+    }
 
     for iteration in 0..loop_count {
         if dry_run {
@@ -137,12 +154,24 @@ pub async fn play(
             }
 
             if let Some(ref mut enigo) = enigo {
-                execute_event(enigo, event, scale, rec_w, rec_h, cur_w, cur_h, speed).await?;
+                execute_event(enigo, event, scale, rec_w, rec_h, cur_w, cur_h, speed, vars).await?;
             }
         }
     }
 
     Ok(())
+}
+
+/// Resolve `$var` references in a string using the runtime vars map.
+fn resolve_var(s: &str, vars: Option<&HashMap<String, String>>) -> String {
+    let Some(map) = vars else { return s.to_string() };
+    if !s.contains('$') { return s.to_string(); }
+
+    let mut result = s.to_string();
+    for (k, v) in map {
+        result = result.replace(&format!("${}", k), v);
+    }
+    result
 }
 
 async fn execute_event(
@@ -154,18 +183,23 @@ async fn execute_event(
     cur_w:  u32,
     cur_h:  u32,
     speed:  f64,
+    vars:   Option<&HashMap<String, String>>,
 ) -> Result<(), PlayerError> {
     let sx = |v: i32| if scale { scale_coord(v, rec_w, cur_w) } else { v };
     let sy = |v: i32| if scale { scale_coord(v, rec_h, cur_h) } else { v };
 
     match event.event_type {
         EventType::KeyDown => {
-            let key = parse_key(event.key.as_deref().unwrap_or(""))?;
+            let raw = event.key.as_deref().unwrap_or("");
+            let resolved = resolve_var(raw, vars);
+            let key = parse_key(&resolved)?;
             let _ = enigo.key(key, Direction::Press);
         }
 
         EventType::KeyUp => {
-            let key = parse_key(event.key.as_deref().unwrap_or(""))?;
+            let raw = event.key.as_deref().unwrap_or("");
+            let resolved = resolve_var(raw, vars);
+            let key = parse_key(&resolved)?;
             let _ = enigo.key(key, Direction::Release);
         }
 
@@ -249,7 +283,8 @@ async fn execute_event(
 
         EventType::TypeText => {
             if let Some(ref text) = event.value {
-                let _ = enigo.text(text);
+                let resolved = resolve_var(text, vars);
+                let _ = enigo.text(&resolved);
             }
         }
 

@@ -136,7 +136,7 @@ async fn run_macro_task(path: PathBuf, state: SharedState) {
     }
 
     let (_player, abort_rx) = macropad_core::Player::new();
-    let result = macropad_core::play(&rec, None, false, abort_rx).await;
+    let result = macropad_core::play(&rec, None, false, abort_rx, None).await;
 
     {
         let mut s = state.lock().unwrap();

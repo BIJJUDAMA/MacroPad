@@ -100,7 +100,7 @@ impl Lexer {
 
     fn read_ident(&mut self, first: char) -> String {
         let mut s = String::from(first);
-        while matches!(self.peek(), Some(c) if c.is_alphanumeric() || c == '_' || c == '-') {
+        while matches!(self.peek(), Some(c) if c.is_alphanumeric() || c == '_' || c == '-' || c == '$') {
             s.push(self.advance().unwrap());
         }
         s
@@ -175,7 +175,7 @@ impl Lexer {
                     tokens.push((Token::Number(n), self.line));
                 }
 
-                Some(c) if c.is_alphabetic() || c == '_' => {
+                Some(c) if c.is_alphabetic() || c == '_' || c == '$' => {
                     let ch    = self.advance().unwrap();
                     let ident = self.read_ident(ch);
 

@@ -35,6 +35,10 @@ enum Command {
         /// Print steps without executing
         #[arg(long)]
         dry_run: bool,
+
+        /// Inject runtime variables as key=value pairs
+        #[arg(short, long, value_parser = parse_var)]
+        var: Vec<(String, String)>,
     },
 
     /// Start recording to a .nitsrec file
@@ -63,6 +67,26 @@ enum Command {
         /// Path to the .nitsrec file
         path: PathBuf,
     },
+
+    /// Run a .nitscript file
+    Run {
+        /// Path to the .nitscript file
+        path: PathBuf,
+
+        /// Print steps without executing
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Inject runtime variables as key=value pairs
+        #[arg(short, long, value_parser = parse_var)]
+        var: Vec<(String, String)>,
+    },
+}
+
+fn parse_var(s: &str) -> Result<(String, String), String> {
+    let (k, v) = s.split_once('=')
+        .ok_or_else(|| format!("expected KEY=VALUE, got: {}", s))?;
+    Ok((k.to_string(), v.to_string()))
 }
 
 #[tokio::main]
@@ -76,8 +100,8 @@ async fn main() {
         Command::Status => {
             commands::cmd_status().await
         }
-        Command::Play { path, speed, dry_run } => {
-            commands::cmd_play(path, speed, dry_run).await
+        Command::Play { path, speed, dry_run, var } => {
+            commands::cmd_play(path, speed, dry_run, var).await
         }
         Command::Record { output } => {
             commands::cmd_record(output).await
@@ -96,6 +120,9 @@ async fn main() {
         }
         Command::History { path } => {
             commands::cmd_history(path).await
+        }
+        Command::Run { path, dry_run, var } => {
+            commands::cmd_run(path, dry_run, var).await
         }
     };
 

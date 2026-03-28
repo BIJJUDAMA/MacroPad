@@ -2,7 +2,6 @@ use macropad_ipc::{IpcCommand, IpcResponse};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::Manager;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MacroInfo {
@@ -22,54 +21,9 @@ pub struct PlaybackResult {
 }
 
 async fn send_ipc(cmd: IpcCommand) -> Result<IpcResponse, String> {
-    let mut json = serde_json::to_string(&cmd)
-        .map_err(|e| e.to_string())?;
-    json.push('\n');
-
-    #[cfg(windows)]
-    {
-        use tokio::net::windows::named_pipe::ClientOptions;
-
-        let mut pipe = ClientOptions::new()
-            .open(macropad_ipc::PIPE_NAME)
-            .map_err(|_| "daemon is not running".to_string())?;
-
-        pipe.write_all(json.as_bytes())
-            .await
-            .map_err(|e| e.to_string())?;
-
-        let mut reader = BufReader::new(&mut pipe);
-        let mut line   = String::new();
-        reader.read_line(&mut line)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        serde_json::from_str::<IpcResponse>(line.trim())
-            .map_err(|e| e.to_string())
-    }
-
-    #[cfg(not(windows))]
-    {
-        use tokio::net::UnixStream;
-
-        let stream = UnixStream::connect(macropad_ipc::SOCKET_PATH)
-            .await
-            .map_err(|_| "daemon is not running".to_string())?;
-
-        let (reader, mut writer) = stream.into_split();
-        writer.write_all(json.as_bytes())
-            .await
-            .map_err(|e| e.to_string())?;
-
-        let mut reader = BufReader::new(reader);
-        let mut line   = String::new();
-        reader.read_line(&mut line)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        serde_json::from_str::<IpcResponse>(line.trim())
-            .map_err(|e| e.to_string())
-    }
+    macropad_ipc::client::send_command(cmd)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
@@ -112,9 +66,11 @@ async fn play_macro(
     dry_run: bool,
 ) -> Result<PlaybackResult, String> {
     let cmd = IpcCommand::Play {
-        path:    PathBuf::from(&path),
+        path:      PathBuf::from(&path),
         speed,
-        dry_run: Some(dry_run),
+        dry_run:   Some(dry_run),
+        vars:      None,
+        overrides: None,
     };
 
     match send_ipc(cmd).await? {

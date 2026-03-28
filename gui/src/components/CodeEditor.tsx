@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react"
+import { useRef, forwardRef, useImperativeHandle } from "react"
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 
@@ -7,9 +7,10 @@ interface Props {
     onChange: (val: string) => void
 }
 
-export function CodeEditor({ value, onChange }: Props) {
+export const CodeEditor = forwardRef<HTMLTextAreaElement, Props>(({ value, onChange }, ref) => {
     const lineCount = Math.max(1, value.split("\n").length)
     const taRef = useRef<HTMLTextAreaElement>(null)
+    useImperativeHandle(ref, () => taRef.current!)
     const gutterRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -76,4 +77,4 @@ export function CodeEditor({ value, onChange }: Props) {
             />
         </div>
     )
-}
+})

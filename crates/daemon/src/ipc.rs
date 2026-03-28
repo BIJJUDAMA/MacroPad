@@ -124,11 +124,21 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
             IpcResponse::Macros { names }
         }
 
-        IpcCommand::Play { path, speed, dry_run } => {
-            let rec = match macropad_core::load(&path) {
+        IpcCommand::Play { path, speed, dry_run, vars, overrides } => {
+            let mut rec = match macropad_core::load(&path) {
                 Ok(r)  => r,
                 Err(e) => return IpcResponse::Error { message: e.to_string() },
             };
+
+            // Apply runtime overrides on top of the file's PlaybackConfig
+            if let Some(ov) = overrides {
+                if let Some(s) = ov.speed            { rec.playback.speed = s; }
+                if let Some(l) = ov.loop_count       { rec.playback.loop_count = l; }
+                if let Some(m) = ov.skip_mouse_move  { rec.playback.skip_mouse_move = m; }
+                if let Some(c) = ov.scale_to_current { rec.playback.scale_to_current = c; }
+                if let Some(w) = ov.wait_for_window  { rec.playback.wait_for_window = Some(w); }
+                if let Some(t) = ov.wait_timeout_ms  { rec.playback.wait_timeout_ms = t; }
+            }
 
             {
                 let mut s = state.lock().unwrap();
@@ -150,6 +160,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                     speed,
                     dry_run.unwrap_or(false),
                     abort_rx,
+                    vars.as_ref(),
                 )
                 .await;
 
