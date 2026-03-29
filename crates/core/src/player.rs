@@ -1,4 +1,4 @@
-use crate::models::{Event, EventType, MouseButton, NitsRec};
+use crate::models::{Event, EventType, MouseButton, MacropadRec};
 use std::collections::HashMap;
 use enigo::{
     Button, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings,
@@ -77,7 +77,7 @@ fn catmull_rom_points(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], st
 }
 
 pub async fn play(
-    rec:      &NitsRec,
+    rec:      &MacropadRec,
     speed:    Option<f64>,
     dry_run:  bool,
     abort_rx: watch::Receiver<bool>,

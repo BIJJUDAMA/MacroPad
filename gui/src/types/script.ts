@@ -27,12 +27,12 @@ export interface BlockPaletteItem {
 }
 
 export const PALETTE: BlockPaletteItem[] = [
-    { type: "run", label: "run", color: "#1D9E75", description: "run a .nitsrec file" },
-    { type: "run_async", label: "run async", color: "#1D9E75", description: "run without waiting" },
-    { type: "if", label: "if", color: "#534AB7", description: "conditional branch" },
-    { type: "loop", label: "loop(n)", color: "#BA7517", description: "repeat N times" },
-    { type: "loop_while", label: "loop while", color: "#BA7517", description: "repeat while condition" },
-    { type: "wait_for", label: "wait for", color: "#185FA5", description: "wait for condition" },
-    { type: "delay", label: "delay", color: "#5F5E5A", description: "pause execution" },
-    { type: "let", label: "let", color: "#993556", description: "declare a variable" },
+    { type: "run", label: "run", color: "var(--block-run)", description: "run a .mpr recording" },
+    { type: "run_async", label: "run async", color: "var(--block-run)", description: "run without waiting" },
+    { type: "if", label: "if", color: "var(--block-control)", description: "conditional branch" },
+    { type: "loop", label: "loop(n)", color: "var(--block-loop)", description: "repeat N times" },
+    { type: "loop_while", label: "loop while", color: "var(--block-loop)", description: "repeat while condition" },
+    { type: "wait_for", label: "wait for", color: "var(--block-wait)", description: "wait for condition" },
+    { type: "delay", label: "delay", color: "var(--block-delay)", description: "pause execution" },
+    { type: "let", label: "let", color: "var(--block-var)", description: "declare a variable" },
 ]

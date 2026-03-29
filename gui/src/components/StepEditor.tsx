@@ -1,10 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { HumanStep } from "./HumanStep"
 import { RawEvent, HumanAction, EditorView } from "../types/editor"
 import { MacroInfo } from "../types/macro"
 import { Save, X, Code2, Users, Activity, History, RotateCcw } from 'lucide-react'
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -167,20 +165,8 @@ export function StepEditor({ macro, onClose }: Props) {
     const [history, setHistory] = useState<string[]>([])
     const [restoring, setRestoring] = useState(false)
 
-    const overlayRef = useRef<HTMLDivElement>(null)
-    const panelRef = useRef<HTMLDivElement>(null)
-
-    useGSAP(() => {
-        if (overlayRef.current && panelRef.current) {
-            gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out' })
-            gsap.fromTo(panelRef.current, { y: 20, scale: 0.95 }, { y: 0, scale: 1, duration: 0.4, ease: 'back.out(1.2)' })
-        }
-    }, [])
-
     function closeWithAnim() {
-        if (!overlayRef.current || !panelRef.current) return onClose()
-        gsap.to(panelRef.current, { y: 20, scale: 0.95, opacity: 0, duration: 0.2, ease: 'power2.in' })
-        gsap.to(overlayRef.current, { opacity: 0, duration: 0.2, ease: 'power2.in', onComplete: onClose })
+        onClose()
     }
 
     const load = useCallback(async () => {
@@ -263,19 +249,18 @@ export function StepEditor({ macro, onClose }: Props) {
     const actions = groupEvents(events)
 
     return (
-        <div ref={overlayRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 opacity-0">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 transition-none">
             <div 
-                ref={panelRef} 
-                className="bg-neutral border border-surface-lighter rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl opacity-100 transform"
+                className="bg-neutral border border-surface-lighter rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl transition-none"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-surface-lighter bg-surface/80 backdrop-blur shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-200 tracking-tight">{macro.name}</h2>
+                        <h2 className="text-xl font-bold text-text-main tracking-tight uppercase">{macro.name}</h2>
                         <div className="flex items-center gap-2 mt-1">
                             <Activity size={12} className="text-secondary" />
-                            <span className="text-xs text-tertiary">
-                                <strong className="text-gray-300">{events.length}</strong> raw events · <strong className="text-gray-300">{actions.length}</strong> actions
+                            <span className="text-xs text-text-dim">
+                                <strong className="text-text-main">{events.length}</strong> raw events · <strong className="text-text-main">{actions.length}</strong> actions
                             </span>
                         </div>
                     </div>
@@ -284,13 +269,13 @@ export function StepEditor({ macro, onClose }: Props) {
                         {/* View Toggle */}
                         <div className="flex bg-surface rounded-lg p-1 border border-surface-lighter shadow-inner">
                             <button 
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "human" ? "bg-surface-lighter text-primary shadow" : "text-tertiary hover:text-gray-300"}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "human" ? "bg-primary/10 text-primary shadow-sm" : "text-text-dim hover:text-text-main"}`}
                                 onClick={() => setView("human")}
                             >
                                 <Users size={14} /> Human
                             </button>
                             <button 
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "raw" ? "bg-surface-lighter text-primary shadow" : "text-tertiary hover:text-gray-300"}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "raw" ? "bg-primary/10 text-primary shadow-sm" : "text-text-dim hover:text-text-main"}`}
                                 onClick={() => setView("raw")}
                             >
                                 <Code2 size={14} /> Raw
@@ -302,7 +287,7 @@ export function StepEditor({ macro, onClose }: Props) {
                         {/* History Dropdown */}
                         <div className="relative">
                             <button 
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${showHistory ? 'bg-surface-lighter border-secondary text-primary' : 'bg-surface border-surface-lighter text-tertiary hover:text-gray-200'}`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${showHistory ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-surface-lighter text-text-dim hover:text-text-main'}`}
                                 onClick={() => setShowHistory(!showHistory)}
                             >
                                 <History size={14} /> History
@@ -311,7 +296,7 @@ export function StepEditor({ macro, onClose }: Props) {
                             {showHistory && (
                                 <div className="absolute right-0 mt-2 w-72 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="px-4 py-3 border-b border-surface-lighter bg-surface/50">
-                                        <h3 className="text-[10px] uppercase font-bold tracking-widest text-tertiary">Version Backups</h3>
+                                        <h3 className="text-[10px] uppercase font-bold tracking-widest text-text-dim">Version Backups</h3>
                                     </div>
                                     <div className="max-h-64 overflow-y-auto custom-scrollbar">
                                         {history.length === 0 ? (
@@ -334,16 +319,16 @@ export function StepEditor({ macro, onClose }: Props) {
                                                         onClick={() => handleRestore(h)}
                                                     >
                                                         <div className="text-left">
-                                                            <div className="text-[11px] font-mono text-gray-300 group-hover:text-primary transition-colors">{label}</div>
-                                                            <div className="text-[9px] text-surface-lighter truncate max-w-[200px]">{filename}</div>
+                                                            <div className="text-[11px] font-mono text-text-main group-hover:text-primary transition-colors">{label}</div>
+                                                            <div className="text-[9px] text-text-dim/60 truncate max-w-[200px]">{filename}</div>
                                                         </div>
-                                                        <RotateCcw size={14} className={`text-surface-lighter group-hover:text-secondary opacity-0 group-hover:opacity-100 transition-all transform group-hover:-rotate-45 ${restoring ? 'animate-spin' : ''}`} />
+                                                        <RotateCcw size={14} className={`text-text-dim opacity-0 group-hover:opacity-100 transition-all transform group-hover:-rotate-45 ${restoring ? 'animate-spin' : ''}`} />
                                                     </button>
                                                 )
                                             })
                                         )}
                                     </div>
-                                    <div className="px-4 py-2 bg-neutral text-[9px] text-surface-lighter text-center border-t border-surface-lighter">
+                                    <div className="px-4 py-2 bg-neutral text-[9px] text-text-dim/60 text-center border-t border-surface-lighter">
                                         Backups are created automatically on each save
                                     </div>
                                 </div>
@@ -353,7 +338,7 @@ export function StepEditor({ macro, onClose }: Props) {
                         <div className="w-px h-6 bg-surface-lighter mx-1"></div>
 
                         <button 
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors ${saved ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-secondary hover:bg-[#72b8d8] text-neutral shadow-[0_0_15px_rgba(137,207,240,0.2)]'}`}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors ${saved ? 'bg-green-500/20 text-text-main border border-green-500/30' : 'bg-secondary hover:bg-[#72b8d8] text-neutral shadow-[0_0_15px_rgba(137,207,240,0.2)]'}`}
                             onClick={handleSave} 
                             disabled={saving}
                         >
@@ -362,7 +347,7 @@ export function StepEditor({ macro, onClose }: Props) {
                         </button>
                         
                         <button 
-                            className="p-2 text-tertiary hover:text-gray-200 hover:bg-surface-lighter rounded-lg transition-colors border border-transparent hover:border-surface-lighter"
+                            className="p-2 text-text-dim hover:text-text-main hover:bg-surface-lighter rounded-lg transition-colors border border-transparent hover:border-surface-lighter"
                             onClick={closeWithAnim}
                             title="Close"
                         >
@@ -380,12 +365,12 @@ export function StepEditor({ macro, onClose }: Props) {
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto p-6 bg-neutral custom-scrollbar">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center h-full text-tertiary space-y-4">
+                        <div className="flex flex-col items-center justify-center h-full text-text-dim space-y-4">
                             <Activity size={32} className="animate-pulse opacity-50" />
                             <p className="font-mono text-xs uppercase tracking-widest">Loading Event Telemetry</p>
                         </div>
                     ) : events.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-tertiary space-y-4">
+                        <div className="flex flex-col items-center justify-center h-full text-text-dim space-y-4">
                             <Code2 size={32} className="opacity-30" />
                             <p className="font-mono text-xs uppercase tracking-widest">No events in this macro sequence</p>
                         </div>
@@ -404,7 +389,7 @@ export function StepEditor({ macro, onClose }: Props) {
                     ) : (
                         <div className="font-mono border border-surface-lighter rounded-xl overflow-hidden shadow-inner bg-surface/20">
                             {/* Sticky Header for Raw Table (optional but nice) */}
-                            <div className="flex items-center gap-4 px-4 py-2 bg-surface text-[10px] uppercase font-bold tracking-widest text-tertiary border-b border-surface-lighter sticky top-0 z-10">
+                            <div className="flex items-center gap-4 px-4 py-2 bg-surface text-[10px] uppercase font-bold tracking-widest text-text-dim border-b border-surface-lighter sticky top-0 z-10">
                                 <span className="w-8 text-right">#</span>
                                 <span className="w-16">Time</span>
                                 <span className="w-32">Type</span>
@@ -414,14 +399,14 @@ export function StepEditor({ macro, onClose }: Props) {
                             <div className="divide-y divide-surface-lighter/50">
                                 {events.map((e, i) => (
                                     <div key={i} className="flex items-center gap-4 px-4 py-1.5 text-xs hover:bg-surface-lighter/30 transition-colors group">
-                                        <span className="w-8 text-right text-surface-lighter group-hover:text-tertiary transition-colors">{i + 1}</span>
+                                        <span className="w-8 text-right text-text-dim/40 group-hover:text-text-dim transition-colors">{i + 1}</span>
                                         <span className="w-16 text-secondary/80">{e.time_ms}ms</span>
                                         <span className="w-32 text-primary/80 uppercase tracking-wider text-[10px] font-bold">{e.type}</span>
-                                        <span className="flex-1 text-gray-300 truncate opacity-80 group-hover:opacity-100 transition-opacity">
+                                        <span className="flex-1 text-text-main truncate opacity-80 group-hover:opacity-100 transition-opacity">
                                             {e.key || e.value || (e.x !== undefined ? `(${e.x}, ${e.y})` : "") || (e.duration_ms !== undefined ? `${e.duration_ms}ms` : "") || "-"}
                                         </span>
                                         <button
-                                            className="w-6 h-6 flex items-center justify-center rounded-md text-surface-lighter hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                            className="w-6 h-6 flex items-center justify-center rounded-md text-text-dim/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                                             onClick={() => setEvents(prev => prev.filter((_, idx) => idx !== i))}
                                             title="Delete Raw Event"
                                         >

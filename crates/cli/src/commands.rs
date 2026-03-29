@@ -82,7 +82,7 @@ pub async fn cmd_record(output: PathBuf) -> Result<(), ClientError> {
     println!("[macropad] recording — press Ctrl+C to stop");
     println!("[macropad] output: {}", output.display());
 
-    match send_command(IpcCommand::Record { output_path: output }).await? {
+    match send_command(IpcCommand::Record { output_path: output, options: None }).await? {
         IpcResponse::Ok => {
             println!("[macropad] recording started");
             Ok(())
@@ -224,8 +224,8 @@ pub async fn cmd_run(
         return Ok(());
     }
 
-    if !path.to_string_lossy().ends_with(".nitscript") {
-        eprintln!("[macropad] warning: file does not have .nitscript extension");
+    if !path.to_string_lossy().ends_with(".mps") {
+        eprintln!("[macropad] warning: file does not have .mps extension");
     }
 
     println!("[macropad] running script: {}", path.display());

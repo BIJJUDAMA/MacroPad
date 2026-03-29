@@ -44,9 +44,9 @@ export function ScriptLogPanel({ lines, running }: Props) {
                     return (
                         <div key={i} className={`leading-relaxed mb-1 pl-3 border-l-2 ${
                             isError ? "text-red-400 border-red-500/50 bg-red-500/5 py-0.5"
-                                : isSuccess ? "text-green-400 border-green-500/50"
+                                : isSuccess ? "text-text-main border-green-500/50"
                                     : isDryRun ? "text-secondary border-secondary/50"
-                                        : "text-gray-300 border-surface-lighter"
+                                        : "text-text-muted border-surface-lighter"
                         }`}>
                             {line}
                         </div>

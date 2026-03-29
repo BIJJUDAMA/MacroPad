@@ -1,6 +1,4 @@
 import { useRef, forwardRef, useImperativeHandle } from "react"
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
 
 interface Props {
     value: string
@@ -12,16 +10,8 @@ export const CodeEditor = forwardRef<HTMLTextAreaElement, Props>(({ value, onCha
     const taRef = useRef<HTMLTextAreaElement>(null)
     useImperativeHandle(ref, () => taRef.current!)
     const gutterRef = useRef<HTMLDivElement>(null)
-    const containerRef = useRef<HTMLDivElement>(null)
 
-    useGSAP(() => {
-        if (containerRef.current) {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 5 },
-                { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
-            )
-        }
-    }, [])
+    // Removed GSAP animations for performance and to fix UI flashes.
 
     function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
         if (e.key === "Tab") {
@@ -47,7 +37,7 @@ export const CodeEditor = forwardRef<HTMLTextAreaElement, Props>(({ value, onCha
     }
 
     return (
-        <div ref={containerRef} className="flex h-full w-full bg-neutral font-mono text-sm leading-relaxed overflow-hidden">
+        <div className="flex h-full w-full bg-neutral font-mono text-sm leading-relaxed overflow-hidden">
             {/* Soft left accent indicating active code zone */}
             <div className="w-1 bg-surface-lighter/50 h-full shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]"></div>
             

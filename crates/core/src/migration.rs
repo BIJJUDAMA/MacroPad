@@ -3,7 +3,7 @@ use toml::Value;
 
 #[derive(Debug, Error)]
 pub enum MigrationError {
-    #[error("missing version field in .nitsrec file")]
+    #[error("missing version field in .mpr file")]
     MissingVersion,
     #[error("unsupported version: {0}")]
     UnsupportedVersion(u32),

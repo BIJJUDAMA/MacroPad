@@ -1,6 +1,4 @@
-import { useState, useRef } from "react"
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
+import { useState } from "react"
 import { Play, X, AlertCircle, Hash, Terminal } from 'lucide-react'
 
 interface Props {
@@ -14,18 +12,6 @@ export function VariablePromptModal({ macroName, requiredVars, onConfirm, onCanc
     const [values, setValues] = useState<Record<string, string>>(
         requiredVars.reduce((acc, v) => ({ ...acc, [v]: "" }), {})
     )
-    const modalRef = useRef<HTMLDivElement>(null)
-    const overlayRef = useRef<HTMLDivElement>(null)
-
-    useGSAP(() => {
-        const tl = gsap.timeline()
-        tl.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 })
-        tl.fromTo(modalRef.current, 
-            { scale: 0.9, opacity: 0, y: 20 }, 
-            { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" },
-            "-=0.2"
-        )
-    }, [])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -37,9 +23,8 @@ export function VariablePromptModal({ macroName, requiredVars, onConfirm, onCanc
     }
 
     return (
-        <div ref={overlayRef} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div 
-                ref={modalRef}
                 className="w-full max-w-md bg-surface border-2 border-secondary/30 rounded-2xl shadow-[0_0_50px_rgba(255,100,0,0.15)] overflow-hidden"
             >
                 {/* Header */}

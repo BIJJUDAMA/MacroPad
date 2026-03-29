@@ -13,7 +13,7 @@ export const SettingsPanel: React.FC = () => {
 
     if (!localConfig) {
         return (
-            <div className="flex items-center justify-center h-full text-tertiary animate-pulse">
+            <div className="flex items-center justify-center h-full text-text-dim animate-pulse">
                 <div className="flex flex-col items-center gap-4">
                     <RefreshCw className="animate-spin text-primary" size={32} />
                     <span className="text-xs font-bold uppercase tracking-[0.3em]">Loading Core...</span>
@@ -47,21 +47,21 @@ export const SettingsPanel: React.FC = () => {
         <div className="p-8 max-w-4xl mx-auto space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-surface-lighter pb-6 mt-4">
-                <h2 className="text-2xl font-bold tracking-tight text-white">
+                <h2 className="text-2xl font-bold tracking-tight text-text-main">
                     Settings
                 </h2>
                 <div className="flex gap-4">
                     <button 
                         onClick={refreshConfig}
                         title="Reload"
-                        className="p-2.5 rounded-lg bg-surface-light border border-surface-lighter text-tertiary hover:text-white hover:border-tertiary transition-all active:scale-95 group"
+                        className="p-2.5 rounded-lg bg-surface-light border border-surface-lighter text-text-dim hover:text-text-main hover:border-text-dim transition-all active:scale-95 group"
                     >
                         <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
                     </button>
                     <button 
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary text-black font-bold uppercase text-xs tracking-wider hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary text-neutral font-bold uppercase text-xs tracking-wider hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
                     >
                         {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
                         {isSaving ? "Saving..." : "Save"}
@@ -79,7 +79,7 @@ export const SettingsPanel: React.FC = () => {
                     
                     <div className="bg-surface border border-surface-lighter p-6 rounded-2xl space-y-6 shadow-xl">
                         <div className="space-y-4">
-                            <label className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-tertiary">
+                            <label className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-text-dim">
                                 <span>Playback Speed</span>
                                 <span className="text-primary">
                                     {localConfig.playback_defaults.speed.toFixed(1)}x
@@ -94,7 +94,7 @@ export const SettingsPanel: React.FC = () => {
                                 onChange={(e) => updateNested('playback_defaults.speed', parseFloat(e.target.value))}
                                 className="w-full accent-primary bg-surface-lighter h-1.5 rounded-full appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-[10px] text-tertiary/60 font-medium">
+                            <div className="flex justify-between text-[10px] text-text-dim font-medium">
                                 <span>0.1 (Slow)</span>
                                 <span>1.0 (Normal)</span>
                                 <span>5.0 (Fast)</span>
@@ -112,18 +112,21 @@ export const SettingsPanel: React.FC = () => {
                     
                     <div className="bg-surface border border-surface-lighter p-6 rounded-2xl space-y-6 shadow-xl">
                         <div className="space-y-3">
-                            <label className="text-[11px] font-bold uppercase tracking-wider text-tertiary">Interface Theme</label>
-                            <div className="flex gap-2">
-                                {['cyber', 'slate', 'classic'].map(t => (
+                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-dim ml-1">Theme</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { id: 'light', label: 'Light' },
+                                    { id: 'dark', label: 'Dark' }
+                                ].map(t => (
                                     <button
-                                        key={t}
-                                        onClick={() => updateNested('ui_theme', t)}
-                                        className={`flex-1 py-2 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all
-                                            ${localConfig.ui_theme === t 
-                                                ? 'bg-secondary/10 border-secondary text-secondary shadow-sm' 
-                                                : 'bg-surface-light border-surface-lighter text-tertiary hover:border-tertiary opacity-70 hover:opacity-100'}`}
+                                        key={t.id}
+                                        onClick={() => updateNested('ui_theme', t.id)}
+                                        className={`py-3 px-4 rounded-lg border text-[12px] font-bold uppercase tracking-wider transition-all
+                                            ${localConfig.ui_theme === t.id 
+                                                ? 'bg-primary border-primary text-surface shadow-md' 
+                                                : 'bg-surface-light border-text-dim text-text-dim hover:border-text-main hover:text-text-main'}`}
                                     >
-                                        {t}
+                                        {t.label}
                                     </button>
                                 ))}
                             </div>
@@ -143,8 +146,8 @@ export const SettingsPanel: React.FC = () => {
                     <div className="bg-surface border border-surface-lighter p-6 rounded-2xl space-y-6 shadow-xl">
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-white">Movement Threshold</p>
-                                <p className="text-[10px] text-tertiary">Pixels before logging</p>
+                                <p className="text-xs font-bold text-text-main">Movement Threshold</p>
+                                <p className="text-[10px] text-text-dim">Pixels before logging</p>
                             </div>
                             <input 
                                 type="number"
@@ -156,8 +159,8 @@ export const SettingsPanel: React.FC = () => {
 
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-white">Refresh Rate</p>
-                                <p className="text-[10px] text-tertiary">Interval in milliseconds</p>
+                                <p className="text-xs font-bold text-text-main">Refresh Rate</p>
+                                <p className="text-[10px] text-text-dim">Interval in milliseconds</p>
                             </div>
                             <input 
                                 type="number"
@@ -184,7 +187,7 @@ export const SettingsPanel: React.FC = () => {
                                     className={`flex items-center gap-3 p-3 rounded-lg border transition-all
                                         ${val 
                                             ? 'bg-primary/5 border-primary/40 text-primary shadow-sm' 
-                                            : 'bg-surface-light border-surface-lighter text-tertiary opacity-40 hover:opacity-100'}`}
+                                            : 'bg-surface-light border-surface-lighter text-text-dim opacity-40 hover:opacity-100'}`}
                                 >
                                     <Icon size={16} />
                                     <span className="text-[10px] font-bold uppercase tracking-widest">{opt.label}</span>

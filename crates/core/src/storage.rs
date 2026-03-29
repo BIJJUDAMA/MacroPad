@@ -1,5 +1,5 @@
 use crate::migration::{migrate, MigrationError};
-use crate::models::{AppConfig, NitsRec};
+use crate::models::{AppConfig, MacropadRec};
 use chrono::Local;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -16,12 +16,12 @@ pub enum StorageError {
     TomlSerialize(#[from] toml::ser::Error),
     #[error("migration error: {0}")]
     Migration(#[from] MigrationError),
-    #[error("file must have .nitsrec extension")]
+    #[error("file must have .mpr extension")]
     WrongExtension,
 }
 
-pub fn load(path: &Path) -> Result<NitsRec, StorageError> {
-    if path.extension().and_then(|e| e.to_str()) != Some("nitsrec") {
+pub fn load(path: &Path) -> Result<MacropadRec, StorageError> {
+    if path.extension().and_then(|e| e.to_str()) != Some("mpr") {
         return Err(StorageError::WrongExtension);
     }
 
@@ -30,12 +30,12 @@ pub fn load(path: &Path) -> Result<NitsRec, StorageError> {
 
     migrate(&mut raw_value)?;
 
-    let rec: NitsRec = raw_value.try_into()?;
+    let rec: MacropadRec = raw_value.try_into()?;
     Ok(rec)
 }
 
-pub fn save(rec: &NitsRec, path: &Path) -> Result<(), StorageError> {
-    if path.extension().and_then(|e| e.to_str()) != Some("nitsrec") {
+pub fn save(rec: &MacropadRec, path: &Path) -> Result<(), StorageError> {
+    if path.extension().and_then(|e| e.to_str()) != Some("mpr") {
         return Err(StorageError::WrongExtension);
     }
 
@@ -56,7 +56,7 @@ fn backup(path: &Path) -> Result<(), StorageError> {
         .and_then(|f| f.to_str())
         .unwrap_or("unknown");
 
-    let history_dir = parent.join(".nits_history");
+    let history_dir = parent.join(".mpr_history");
     fs::create_dir_all(&history_dir)?;
 
     let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
@@ -74,7 +74,7 @@ pub fn list_history(path: &Path) -> Result<Vec<PathBuf>, StorageError> {
         .and_then(|f| f.to_str())
         .unwrap_or("unknown");
 
-    let history_dir = parent.join(".nits_history");
+    let history_dir = parent.join(".mpr_history");
     if !history_dir.exists() {
         return Ok(vec![]);
     }

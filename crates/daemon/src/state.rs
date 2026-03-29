@@ -1,4 +1,4 @@
-use macropad_core::models::NitsRec;
+use macropad_core::models::MacropadRec;
 use platform::hotkey::{Hotkey, HotkeyManager};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -16,7 +16,7 @@ pub enum PlaybackStatus {
 pub struct MacroEntry {
     pub name:   String,
     pub path:   PathBuf,
-    pub rec:    NitsRec,
+    pub rec:    MacropadRec,
     pub hotkey: Option<Hotkey>,
 }
 

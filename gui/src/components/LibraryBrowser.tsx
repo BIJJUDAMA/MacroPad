@@ -3,7 +3,8 @@ import { MacroCard } from "./MacroCard"
 import { useDaemonStatus, useMacroList } from "../hooks/useDaemon"
 import { useRecording } from "../hooks/useRecording"
 import { RecordingIndicator } from "./RecordingIndicator"
-import { Search, Plus, Radio, RefreshCw, DatabaseZap, Info, Zap } from 'lucide-react'
+import { Search, Plus, Radio, RefreshCw, DatabaseZap, Zap } from 'lucide-react'
+import { Tooltip } from "./Tooltip"
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -20,7 +21,6 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
     const { macros, loading, error, refresh, addMacro, removeMacro, duplicateMacro } = useMacroList(paths, setPaths)
     const [search, setSearch] = useState("")
     const [tagFilter, setTagFilter] = useState<string | null>(null)
-    const [showInfo, setShowInfo] = useState(false)
 
     const onRecordSaved = useCallback((path: string) => {
         addMacro(path)
@@ -53,18 +53,7 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                         <DatabaseZap className="text-primary" size={24} />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-200 tracking-tight">Vault</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="relative flex h-2 w-2">
-                              {status === "online" && (
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
-                              )}
-                              <span className={`relative inline-flex rounded-full h-2 w-2 ${status === 'online' ? 'bg-secondary' : 'bg-red-500'}`}></span>
-                            </span>
-                            <span className="text-xs font-mono text-tertiary uppercase tracking-wider">
-                                Backend: {status === "offline" ? "Disconnected" : "Online"}
-                            </span>
-                        </div>
+                        <h2 className="text-xl font-bold text-text-main tracking-tight uppercase">Library</h2>
                     </div>
                 </div>
 
@@ -76,7 +65,7 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                             <span className="text-[10px] font-bold uppercase tracking-widest text-tertiary">Engine Ready</span>
                             
                             {/* Tooltip for status */}
-                            <div className="absolute top-full right-0 mt-2 w-64 p-4 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[70] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                            <div className="absolute top-full right-0 mt-2 w-64 p-4 bg-surface border border-surface-lighter rounded-xl shadow-2xl z-[70] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
                                 <h4 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
                                     <Zap size={12} /> Execution Engine
                                 </h4>
@@ -86,52 +75,11 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                             </div>
                         </div>
                     )}
-
-                    <button
-                        className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-primary rounded-lg transition-colors group relative"
-                        onClick={() => setShowInfo(!showInfo)}
-                        title="Help / Documentation"
-                    >
-                        <Info size={18} />
-                        {showInfo && (
-                            <div className="absolute top-full right-0 mt-3 w-80 p-5 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[70] text-left">
-                                <h4 className="text-sm font-bold text-gray-100 mb-3 flex items-center gap-2">
-                                    <DatabaseZap size={16} className="text-primary" /> MacroNits Ecosystem
-                                </h4>
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                                            <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Macros (.nitsrec)</span>
-                                        </div>
-                                        <p className="text-[10px] text-tertiary leading-relaxed">
-                                            High-fidelity recordings of your input. Use these for raw automation. Every save creates a backup in history.
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
-                                            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">Scripts (.nitscript)</span>
-                                        </div>
-                                        <p className="text-[10px] text-tertiary leading-relaxed">
-                                            Logic-driven automation. Wraps macros to add loops, conditions, and variables. Edit these with your preferred IDE.
-                                        </p>
-                                    </div>
-                                    <div className="pt-2 border-t border-surface-lighter">
-                                        <p className="text-[9px] text-surface-lighter italic">
-                                            Tip: Click the 'FileCode' icon on any macro to wrap it in a script automatically.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </button>
-                    
                     <button
                         className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all shadow-lg ${
                             recState !== "idle" 
                             ? "bg-surface text-tertiary border border-surface-lighter opacity-50 cursor-not-allowed" 
-                            : "bg-primary text-neutral hover:bg-[#ff7a45] shadow-primary/20"
+                            : "bg-primary text-neutral hover:bg-primary-hover shadow-primary/20"
                         }`}
                         onClick={startRecording}
                         disabled={recState !== "idle"}
@@ -140,20 +88,23 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                         {recState === "idle" ? "Record" : recState === "recording" ? "Recording..." : "Saving..."}
                     </button>
                     
-                    <button 
-                        className="flex items-center gap-2 bg-surface hover:bg-surface-light border border-surface-lighter text-gray-300 hover:text-white px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors"
-                        onClick={handleBrowse}
-                    >
-                        <Plus size={18} /> Add
-                    </button>
+                    <Tooltip name="Add Macro" description="Browse your computer to add existing .mpr or .mps files to your library.">
+                        <button 
+                            className="flex items-center gap-2 bg-surface hover:bg-surface-light border border-surface-lighter text-text-dim hover:text-text-main px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors"
+                            onClick={handleBrowse}
+                        >
+                            <Plus size={18} /> Add
+                        </button>
+                    </Tooltip>
                     
-                    <button 
-                        className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-gray-200 rounded-lg transition-colors"
-                        onClick={refresh}
-                        title="Refresh Macro List"
-                    >
-                        <RefreshCw size={18} />
-                    </button>
+                    <Tooltip name="Refresh Library" description="Rescan your library folder for any new or modified macro files." align="end">
+                        <button 
+                            className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-text-main rounded-lg transition-colors"
+                            onClick={refresh}
+                        >
+                            <RefreshCw size={18} />
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -166,9 +117,9 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
             {/* Filters */}
             <div className="mb-6 flex flex-col gap-4">
                 <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-tertiary" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-main" size={18} />
                     <input
-                        className="w-full bg-surface border border-surface-lighter text-gray-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-secondary transition-colors font-mono text-sm placeholder-tertiary/70"
+                        className="w-full bg-surface border border-surface-lighter text-text-main rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-secondary transition-colors font-mono text-sm placeholder-text-main/50"
                         placeholder="Search macros by name or tag..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
@@ -206,11 +157,11 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 bg-surface/30 rounded-xl p-4">
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-20 text-tertiary">
+                    <div className="flex flex-col items-center justify-center py-20 text-text-main">
                         <RefreshCw className="animate-spin mb-4" size={32} />
-                        <p className="font-mono text-sm uppercase tracking-widest">Loading Vault...</p>
+                        <p className="font-mono text-sm uppercase tracking-widest">Loading Library...</p>
                     </div>
                 )}
 
@@ -226,11 +177,11 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                 )}
 
                 {!loading && !error && filtered.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-24 text-tertiary border border-dashed border-surface-lighter rounded-xl bg-surface/30">
-                        <DatabaseZap size={48} className="mb-4 opacity-20" />
+                    <div className="flex flex-col items-center justify-center py-24 text-text-main border border-dashed border-surface-lighter rounded-xl bg-surface/30">
+                        <DatabaseZap size={48} className="mb-4 opacity-50" />
                         <p className="font-mono text-sm uppercase tracking-widest">
                             {macros.length === 0
-                                ? "No macros in vault. Start recording."
+                                ? "No macros in library. Start recording."
                                 : "No macros match your search criteria."}
                         </p>
                     </div>

@@ -1,33 +1,51 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Jersey 25';
+  src: url('./assets/fonts/Jersey25-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
-  --primary: #FF5F1F;
-  --secondary: #89CFF0;
-  --tertiary: #71797E;
-  --neutral: #0A0A0A;
-  --surface: #16161a;
-  --surface-light: #202025;
-  --surface-lighter: #2e2e33;
+  /* BRUTALIST LIGHT THEME (Default) */
+  --primary: #FF3B30;
+  --secondary: #007AFF;
+  --tertiary: #000000; /* Force black for visibility as requested */
+  --surface: #FFFFFF;
+  --surface-light: #F2F2F7;
+  --surface-lighter: #E5E5EA;
+  --neutral: #FFD426; /* Bright yellow background */
+  --text-main: #000000;
+  --text-dim: #111111;
+  --text-muted: #333333;
+  --primary-hover: #FF1A0D;
+  --primary-dim: rgba(255, 59, 48, 0.2);
+  --radius: 0px;
+
+  /* Block Colors */
+  --block-run: #1D9E75;
+  --block-control: #534AB7;
+  --block-loop: #BA7517;
+  --block-wait: #185FA5;
+  --block-delay: #5F5E5A;
+  --block-var: #993556;
 }
 
-.theme-slate {
-  --primary: #3b82f6;
-  --secondary: #a5b4fc;
-  --tertiary: #64748b;
-  --neutral: #0f172a;
-  --surface: #1e293b;
-  --surface-light: #334155;
-  --surface-lighter: #475569;
-}
-
-.theme-classic {
-  --primary: #ffffff;
-  --secondary: #cccccc;
-  --tertiary: #999999;
-  --neutral: #000000;
-  --surface: #111111;
-  --surface-light: #222222;
-  --surface-lighter: #333333;
+.theme-dark {
+  /* CLEAN BRUTALIST DARK THEME */
+  --primary: #FF5F1F; /* Bold Orange */
+  --secondary: #00FFFF;
+  --tertiary: #EBFF00; /* Electric Yellow instead of Purple */
+  --surface: #000000; /* Pitch black panels for high contrast */
+  --surface-light: #111111;
+  --surface-lighter: #222222;
+  --neutral: #1A1A1A; /* distinct grey background like the yellow in light mode */
+  --text-main: #ffffff;
+  --text-dim: #cccccc;
+  --text-muted: #888888;
+  --primary-hover: #E54E14;
+  --primary-dim: rgba(255, 95, 31, 0.15);
 }
 
 @theme {
@@ -38,18 +56,78 @@
   --color-surface: var(--surface);
   --color-surface-light: var(--surface-light);
   --color-surface-lighter: var(--surface-lighter);
+  --color-text-main: var(--text-main);
+  --color-text-dim: var(--text-dim);
+  --color-text-muted: var(--text-muted);
+  --color-primary-dim: var(--primary-dim);
+  --color-primary-hover: var(--primary-hover);
+
+  /* Block Colors */
+  --color-block-run: var(--block-run);
+  --color-block-control: var(--block-control);
+  --color-block-loop: var(--block-loop);
+  --color-block-wait: var(--block-wait);
+  --color-block-delay: var(--block-delay);
+  --color-block-var: var(--block-var);
 }
 
 @layer base {
   body {
-    @apply bg-neutral text-gray-200 antialiased font-sans;
+    @apply bg-neutral text-text-main antialiased font-sans;
     margin: 0;
   }
   
   button {
     @apply focus:outline-none transition-colors duration-200;
   }
+
+  /* --- BALANCED NEO-BRUTALISM --- */
+  * {
+    border-radius: 0 !important;
+  }
+
+  /* Only apply the raw technical font to specific structural elements to balance readability */
+  h1, h2, h3, button, nav, .font-mono {
+    font-family: 'Jersey 25', "Courier New", Courier, monospace !important;
+  }
+
+  /* Softer but distinct contrasting borders */
+  .bg-surface,
+  .bg-surface-light,
+  .bg-primary,
+  .border,
+  input {
+    border: 2px solid var(--text-main) !important;
+    box-shadow: 2px 2px 0px 0px var(--text-main) !important;
+  }
+
+  /* Specific handling for buttons to make them punchy but clean */
+  button {
+    border: 2px solid var(--text-main) !important;
+    box-shadow: 3px 3px 0px 0px var(--text-main) !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
+    background-color: var(--surface) !important;
+    color: var(--text-main) !important;
+  }
+  
+  button.bg-primary {
+    background-color: var(--primary) !important;
+    color: var(--surface) !important;
+  }
+
+  button:active {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 1px 1px 0px 0px var(--text-main) !important;
+  }
+
+  /* Scale back shadow utilities to be less intrusive */
+  .shadow-xl, 
+  .shadow-2xl,
+  .shadow-sm {
+    box-shadow: 3px 3px 0px 0px var(--text-main) !important;
+  }
 }
+
 
 ::-webkit-scrollbar {
   width: 8px;

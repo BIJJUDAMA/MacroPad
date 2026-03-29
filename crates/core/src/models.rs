@@ -3,7 +3,7 @@ use chrono::NaiveDate;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NitsRec {
+pub struct MacropadRec {
     pub meta:     Metadata,
     pub playback: PlaybackConfig,
     pub vars:     Option<HashMap<String, VarDefinition>>,

@@ -25,7 +25,7 @@ pub enum IpcError {
 }
 
 /// Overrides that a script or CLI caller can apply
-/// on top of the `.nitsrec` file's baked-in `PlaybackConfig`.
+/// on top of the `.mpr` file's baked-in `PlaybackConfig`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PlaybackOverrides {
     pub speed:            Option<f64>,

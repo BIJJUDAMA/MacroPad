@@ -1,7 +1,5 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { RecordingState } from "../hooks/useRecording"
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
 import { Square, Radio } from 'lucide-react'
 
 interface Props {
@@ -12,8 +10,6 @@ interface Props {
 
 export function RecordingIndicator({ state, onStop, error }: Props) {
     const [elapsed, setElapsed] = useState(0)
-    const containerRef = useRef<HTMLDivElement>(null)
-    const dotRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (state !== "recording") {
@@ -24,27 +20,7 @@ export function RecordingIndicator({ state, onStop, error }: Props) {
         return () => clearInterval(interval)
     }, [state])
 
-    useGSAP(() => {
-        if (state === 'recording' && dotRef.current) {
-            gsap.to(dotRef.current, {
-                opacity: 0.3,
-                scale: 0.8,
-                duration: 0.8,
-                yoyo: true,
-                repeat: -1,
-                ease: 'power1.inOut'
-            })
-        }
-    }, [state])
-
-    useGSAP(() => {
-        if (state !== 'idle' && containerRef.current) {
-            gsap.fromTo(containerRef.current,
-                { y: -20, autoAlpha: 0, scale: 0.95 },
-                { y: 0, autoAlpha: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' }
-            )
-        }
-    }, [state])
+    // Removed GSAP animations for internal stability and to fix UI flashes.
 
     if (state === "idle") return null
 
@@ -53,14 +29,13 @@ export function RecordingIndicator({ state, onStop, error }: Props) {
 
     return (
         <div 
-            ref={containerRef}
             className="flex justify-between items-center bg-surface border border-primary/40 rounded-xl px-5 py-3 mb-6 shadow-[0_4px_24px_rgba(255,95,31,0.15)] relative overflow-hidden"
         >
             {/* Background Glow */}
             <div className="absolute inset-0 bg-primary/5 pointer-events-none"></div>
 
             <div className="flex items-center gap-4 relative z-10">
-                <div ref={dotRef} className="text-primary flex items-center justify-center">
+                <div className="text-primary flex items-center justify-center">
                     <Radio size={20} className="fill-primary text-primary" />
                 </div>
                 

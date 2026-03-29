@@ -23,9 +23,9 @@ enum Command {
     /// Show daemon status and last run result
     Status,
 
-    /// Play a .nitsrec file
+    /// Play a .mpr file
     Play {
-        /// Path to the .nitsrec file
+        /// Path to the .mpr file
         path: PathBuf,
 
         /// Playback speed multiplier (default 1.0)
@@ -41,7 +41,7 @@ enum Command {
         var: Vec<(String, String)>,
     },
 
-    /// Start recording to a .nitsrec file
+    /// Start recording to a .mpr file
     Record {
         /// Output path for the recording
         output: PathBuf,
@@ -56,21 +56,21 @@ enum Command {
     /// List all loaded macros
     List,
 
-    /// Show info about a .nitsrec file
+    /// Show info about a .mpr file
     Info {
-        /// Path to the .nitsrec file
+        /// Path to the .mpr file
         path: PathBuf,
     },
 
-    /// Show version history of a .nitsrec file
+    /// Show version history of a .mpr file
     History {
-        /// Path to the .nitsrec file
+        /// Path to the .mpr file
         path: PathBuf,
     },
 
-    /// Run a .nitscript file
+    /// Run a .mps file
     Run {
-        /// Path to the .nitscript file
+        /// Path to the .mps file
         path: PathBuf,
 
         /// Print steps without executing

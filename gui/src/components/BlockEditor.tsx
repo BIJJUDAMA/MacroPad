@@ -67,7 +67,7 @@ function BlockCard({
                     style={{ backgroundColor: color }}
                 />
                 
-                <div className="text-tertiary cursor-grab active:cursor-grabbing hover:text-gray-300 mt-0.5" title="Drag to reorder">
+                <div className="text-text-dim cursor-grab active:cursor-grabbing hover:text-text-main mt-0.5" title="Drag to reorder">
                     <GripVertical size={16} />
                 </div>
 
@@ -81,9 +81,9 @@ function BlockCard({
                 <div className="flex-1 flex flex-col gap-2">
                     {Object.entries(block.args).map(([key, val]) => (
                         <div key={key} className="flex items-center gap-2">
-                            <span className="text-[10px] text-tertiary uppercase tracking-widest w-16 text-right select-none">{key}</span>
+                            <span className="text-[10px] text-text-dim uppercase tracking-widest w-16 text-right select-none">{key}</span>
                             <input
-                                className="flex-1 bg-neutral border border-surface-lighter rounded-md px-2 py-1 text-xs text-gray-200 font-mono focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary/30 transition-all placeholder:text-surface-lighter"
+                                className="flex-1 bg-neutral border border-surface-lighter rounded-md px-2 py-1 text-xs text-text-main font-mono focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary/30 transition-all placeholder:text-text-muted"
                                 value={val}
                                 onChange={e => onUpdate(block.id, { ...block.args, [key]: e.target.value })}
                             />
@@ -92,7 +92,7 @@ function BlockCard({
                 </div>
 
                 <button
-                    className="text-surface-lighter hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-surface hover:bg-surface-lighter rounded-md"
+                    className="text-text-dim hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-surface hover:bg-surface-lighter rounded-md"
                     onClick={() => onDelete(block.id)}
                     title="Delete block"
                 >
@@ -226,11 +226,11 @@ export function BlockEditor({ blocks, onChange, scriptDir: _ }: Props) {
         <div className="flex h-full w-full overflow-hidden bg-neutral">
             {/* Palette Sidebar */}
             <div className="w-[220px] bg-surface/50 border-r border-surface-lighter p-4 flex flex-col overflow-y-auto shrink-0 custom-scrollbar">
-                <div className="text-[10px] text-tertiary uppercase tracking-widest font-bold mb-4 px-1">Component Library</div>
+                <div className="text-[10px] text-text-dim uppercase tracking-widest font-bold mb-4 px-1">Component Library</div>
                 {PALETTE.map(item => (
                     <button
                         key={item.type}
-                        className="flex flex-col text-left bg-surface border border-surface-lighter hover:border-gray-600 rounded-lg p-3 mb-2 transition-all hover:-translate-y-0.5 select-none relative overflow-hidden"
+                        className="flex flex-col text-left bg-surface border border-surface-lighter hover:border-text-dim rounded-lg p-3 mb-2 transition-all hover:-translate-y-0.5 select-none relative overflow-hidden"
                         onClick={() => addBlock(item.type)}
                         title={item.description}
                     >
@@ -239,7 +239,7 @@ export function BlockEditor({ blocks, onChange, scriptDir: _ }: Props) {
                             style={{ backgroundColor: item.color }}
                         />
                         <span className="font-bold text-xs pl-2" style={{ color: item.color }}>{item.label}</span>
-                        <span className="text-[10px] text-gray-500 mt-1 pl-2 leading-tight">{item.description}</span>
+                        <span className="text-[10px] text-text-muted mt-1 pl-2 leading-tight">{item.description}</span>
                     </button>
                 ))}
             </div>
@@ -247,7 +247,7 @@ export function BlockEditor({ blocks, onChange, scriptDir: _ }: Props) {
             {/* Canvas Area */}
             <div className="flex-1 p-6 overflow-y-auto custom-scrollbar relative">
                 {blocks.length === 0 ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-tertiary">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-text-dim">
                         <div className="border border-dashed border-surface-lighter rounded-xl p-12 text-center bg-surface/30">
                             <Plus size={32} className="mx-auto mb-4 opacity-50" />
                             <p className="font-mono text-xs uppercase tracking-widest">Construct Blueprint</p>

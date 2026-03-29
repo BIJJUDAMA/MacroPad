@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { MacroInfo } from "../types/macro"
 import { StepEditor } from "./StepEditor"
 import { VariablePromptModal } from "./VariablePromptModal"
 import { Play, Square, Edit3, Copy, Trash2, Clock, Activity, Hash, Layers, FileCode } from 'lucide-react'
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -23,44 +21,8 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
     const [error, setError] = useState<string | null>(null)
     const [showEditor, setShowEditor] = useState(false)
     const [showVarPrompt, setShowVarPrompt] = useState(false)
-    const cardRef = useRef<HTMLDivElement>(null)
+    // Removed GSAP animations for performance and to fix UI flashes.
 
-    useGSAP(() => {
-        if (!cardRef.current) return
-        
-        // Setup initial state
-        gsap.set(cardRef.current, { clearProps: 'all' })
-
-        // Add hover listener dynamically through GSAP timeline for better perf
-        const tl = gsap.timeline({ paused: true })
-        tl.to(cardRef.current, {
-            y: -2,
-            boxShadow: '0 8px 30px rgba(255, 95, 31, 0.08)',
-            borderColor: 'rgba(255, 95, 31, 0.3)',
-            duration: 0.2,
-            ease: 'power2.out'
-        })
-        
-        cardRef.current.addEventListener('mouseenter', () => tl.play())
-        cardRef.current.addEventListener('mouseleave', () => tl.reverse())
-
-        return () => {
-            tl.kill()
-        }
-    }, [])
-
-    useGSAP(() => {
-        if (playing && cardRef.current) {
-            gsap.to(cardRef.current, {
-                boxShadow: '0 0 20px rgba(137, 207, 240, 0.2)', // Secondary glow while playing
-                borderColor: 'rgba(137, 207, 240, 0.4)',
-                duration: 0.8,
-                repeat: -1,
-                yoyo: true,
-                ease: 'sine.inOut'
-            })
-        }
-    }, [playing])
 
     useEffect(() => {
         if (!playing) return
@@ -148,7 +110,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                     onCancel={() => setShowVarPrompt(false)}
                 />
             )}
-            <div ref={cardRef} className="bg-surface-light border border-surface-lighter rounded-xl p-5 mb-4 relative overflow-hidden transition-colors">
+            <div className="bg-surface-light border border-surface-lighter rounded-xl p-5 mb-4 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,95,31,0.08)] hover:border-primary/30">
                 
                 {playing && (
                     <div className="absolute top-0 left-0 h-1 bg-secondary w-full skeleton-loading-anim"></div>
@@ -157,7 +119,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-bold text-gray-200 tracking-wide">{macro.name}</h3>
+                            <h3 className="text-lg font-bold text-text-main tracking-wide">{macro.name}</h3>
                             {playing && <span className="text-[10px] bg-secondary/20 text-secondary uppercase font-bold px-2 py-0.5 rounded-full tracking-widest animate-pulse">Running</span>}
                         </div>
                         
@@ -182,7 +144,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                     {/* Action Panel */}
                     <div className="flex items-center gap-2">
                         <button
-                            className={`p-2 rounded-lg transition-all ${playing ? 'bg-secondary/20 text-secondary' : 'bg-surface hover:bg-secondary/10 hover:text-secondary text-gray-400 border border-surface-lighter hover:border-secondary/30'}`}
+                            className={`p-2 rounded-lg transition-all ${playing ? 'bg-secondary/20 text-secondary' : 'bg-surface hover:bg-secondary/10 hover:text-secondary text-text-dim border border-surface-lighter hover:border-secondary/30'}`}
                             onClick={() => handlePlay()}
                             disabled={playing}
                             title="Play Macro"
@@ -191,7 +153,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                         </button>
 
                         <button 
-                            className="p-2 bg-surface hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
+                            className="p-2 bg-surface hover:bg-red-500/10 text-text-dim hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
                             onClick={handleStop}
                             title="Stop Macro"
                         >
@@ -201,7 +163,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                         <div className="w-px h-6 bg-surface-lighter mx-1"></div>
 
                         <button 
-                            className="p-2 bg-surface hover:bg-primary/10 text-gray-400 hover:text-primary border border-surface-lighter hover:border-primary/30 rounded-lg transition-all"
+                            className="p-2 bg-surface hover:bg-primary/10 text-text-dim hover:text-primary border border-surface-lighter hover:border-primary/30 rounded-lg transition-all"
                             onClick={() => setShowEditor(true)}
                             title="Edit Macro"
                         >
@@ -209,7 +171,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                         </button>
                         
                         <button 
-                            className="p-2 bg-surface hover:bg-secondary/10 text-gray-400 hover:text-secondary border border-surface-lighter hover:border-secondary/30 rounded-lg transition-all"
+                            className="p-2 bg-surface hover:bg-secondary/10 text-text-dim hover:text-secondary border border-surface-lighter hover:border-secondary/30 rounded-lg transition-all"
                             onClick={handleWrapInScript}
                             title="Wrap in NitScript"
                         >
@@ -217,7 +179,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                         </button>
                         
                         <button 
-                            className="p-2 bg-surface hover:bg-gray-700 text-gray-400 hover:text-gray-200 border border-surface-lighter rounded-lg transition-all"
+                            className="p-2 bg-surface hover:bg-surface-light text-text-dim hover:text-text-main border border-surface-lighter rounded-lg transition-all"
                             onClick={onDuplicate}
                             title="Duplicate"
                         >
@@ -225,7 +187,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                         </button>
                         
                         <button 
-                            className="p-2 bg-surface hover:bg-red-900/40 text-gray-500 hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
+                            className="p-2 bg-surface hover:bg-red-900/40 text-text-dim hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
                             onClick={onRemove}
                             title="Delete Macro"
                         >

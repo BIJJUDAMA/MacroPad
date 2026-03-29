@@ -37,9 +37,14 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         if (config?.ui_theme) {
-            // Remove previous themes
-            document.documentElement.classList.remove("theme-cyber", "theme-slate", "theme-classic");
-            // Add current theme
+            // Remove any existing theme- classes
+            const classList = document.documentElement.classList;
+            Array.from(classList).forEach(cls => {
+                if (cls.startsWith("theme-")) {
+                    classList.remove(cls);
+                }
+            });
+            // Add CURRENT theme
             document.documentElement.classList.add(`theme-${config.ui_theme}`);
         }
     }, [config?.ui_theme]);

@@ -172,7 +172,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
             IpcResponse::Ok
         }
 
-        IpcCommand::Record { output_path } => {
+        IpcCommand::Record { output_path, .. } => {
             {
                 let mut s = state.lock().unwrap();
                 if s.is_busy() {
@@ -210,8 +210,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                     // consolidate raw mouse moves into segments
                     let events = consolidate_mouse_segments(&events);
                     println!("[daemon] after consolidation: {} events", events.len());
-
-                    let rec = macropad_core::models::NitsRec {
+                    let rec = macropad_core::models::MacropadRec {
                         meta: macropad_core::models::Metadata {
                             version: 1,
                             name:    output_path
