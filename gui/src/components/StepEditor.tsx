@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { HumanStep } from "./HumanStep"
 import { RawEvent, HumanAction, EditorView } from "../types/editor"
 import { MacroInfo } from "../types/macro"
@@ -164,6 +164,22 @@ export function StepEditor({ macro, onClose }: Props) {
     const [showHistory, setShowHistory] = useState(false)
     const [history, setHistory] = useState<string[]>([])
     const [restoring, setRestoring] = useState(false)
+    const historyRef = useRef<HTMLDivElement>(null)
+
+    // Close history on click outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (historyRef.current && !historyRef.current.contains(event.target as Node)) {
+                setShowHistory(false)
+            }
+        }
+        if (showHistory) {
+            document.addEventListener("mousedown", handleClickOutside)
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+        }
+    }, [showHistory])
 
     function closeWithAnim() {
         onClose()
@@ -251,10 +267,10 @@ export function StepEditor({ macro, onClose }: Props) {
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 transition-none">
             <div 
-                className="bg-neutral border border-surface-lighter rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl transition-none"
+                className="bg-neutral border border-surface-lighter rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl transition-none"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-surface-lighter bg-surface/80 backdrop-blur shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-surface-lighter bg-surface/95 backdrop-blur shrink-0 rounded-t-2xl">
                     <div>
                         <h2 className="text-xl font-bold text-text-main tracking-tight uppercase">{macro.name}</h2>
                         <div className="flex items-center gap-2 mt-1">
@@ -294,8 +310,11 @@ export function StepEditor({ macro, onClose }: Props) {
                             </button>
 
                             {showHistory && (
-                                <div className="absolute right-0 mt-2 w-72 bg-surface-dark border border-surface-lighter rounded-xl shadow-2xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="px-4 py-3 border-b border-surface-lighter bg-surface/50">
+                                <div 
+                                    ref={historyRef}
+                                    className="absolute right-0 mt-2 w-72 bg-[#121212] border border-surface-lighter rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                                >
+                                    <div className="px-4 py-3 border-b border-surface-lighter bg-surface-dark">
                                         <h3 className="text-[10px] uppercase font-bold tracking-widest text-text-dim">Version Backups</h3>
                                     </div>
                                     <div className="max-h-64 overflow-y-auto custom-scrollbar">

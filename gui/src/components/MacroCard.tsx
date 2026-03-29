@@ -3,6 +3,7 @@ import { MacroInfo } from "../types/macro"
 import { StepEditor } from "./StepEditor"
 import { VariablePromptModal } from "./VariablePromptModal"
 import { Play, Square, Edit3, Copy, Trash2, Clock, Activity, Hash, Layers, FileCode } from 'lucide-react'
+import { Tooltip } from "./Tooltip"
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -110,7 +111,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                     onCancel={() => setShowVarPrompt(false)}
                 />
             )}
-            <div className="bg-surface-light border border-surface-lighter rounded-xl p-5 mb-4 relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,95,31,0.08)] hover:border-primary/30">
+            <div className="bg-surface-light border border-surface-lighter rounded-xl p-5 mb-4 relative transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,95,31,0.08)] hover:border-primary/30">
                 
                 {playing && (
                     <div className="absolute top-0 left-0 h-1 bg-secondary w-full skeleton-loading-anim"></div>
@@ -143,56 +144,62 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
 
                     {/* Action Panel */}
                     <div className="flex items-center gap-2">
-                        <button
-                            className={`p-2 rounded-lg transition-all ${playing ? 'bg-secondary/20 text-secondary' : 'bg-surface hover:bg-secondary/10 hover:text-secondary text-text-dim border border-surface-lighter hover:border-secondary/30'}`}
-                            onClick={() => handlePlay()}
-                            disabled={playing}
-                            title="Play Macro"
-                        >
-                            <Play size={18} fill={playing ? "currentColor" : "none"} />
-                        </button>
+                        <Tooltip name="Play Macro" description="Execute this macro recording on your system." position="bottom">
+                            <button
+                                className={`p-2 rounded-lg transition-all ${playing ? 'bg-secondary/20 text-secondary' : 'bg-surface hover:bg-secondary/10 hover:text-secondary text-text-dim border border-surface-lighter hover:border-secondary/30'}`}
+                                onClick={() => handlePlay()}
+                                disabled={playing}
+                            >
+                                <Play size={18} fill={playing ? "currentColor" : "none"} />
+                            </button>
+                        </Tooltip>
 
-                        <button 
-                            className="p-2 bg-surface hover:bg-red-500/10 text-text-dim hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
-                            onClick={handleStop}
-                            title="Stop Macro"
-                        >
-                            <Square size={18} />
-                        </button>
+                        <Tooltip name="Stop Execution" description="Immediately stop any active playback or recording." position="bottom">
+                            <button 
+                                className="p-2 bg-surface hover:bg-red-500/10 text-text-dim hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
+                                onClick={handleStop}
+                            >
+                                <Square size={18} />
+                            </button>
+                        </Tooltip>
                         
                         <div className="w-px h-6 bg-surface-lighter mx-1"></div>
 
-                        <button 
-                            className="p-2 bg-surface hover:bg-primary/10 text-text-dim hover:text-primary border border-surface-lighter hover:border-primary/30 rounded-lg transition-all"
-                            onClick={() => setShowEditor(true)}
-                            title="Edit Macro"
-                        >
-                            <Edit3 size={18} />
-                        </button>
+                        <Tooltip name="Step Editor" description="Modify individual events, timings, and mouse movements." position="bottom">
+                            <button 
+                                className="p-2 bg-surface hover:bg-primary/10 text-text-dim hover:text-primary border border-surface-lighter hover:border-primary/30 rounded-lg transition-all"
+                                onClick={() => setShowEditor(true)}
+                            >
+                                <Edit3 size={18} />
+                            </button>
+                        </Tooltip>
                         
-                        <button 
-                            className="p-2 bg-surface hover:bg-secondary/10 text-text-dim hover:text-secondary border border-surface-lighter hover:border-secondary/30 rounded-lg transition-all"
-                            onClick={handleWrapInScript}
-                            title="Wrap in MacroScript"
-                        >
-                            <FileCode size={18} />
-                        </button>
+                        <Tooltip name="Convert to Script" description="Wrap this recording into an advanced MacroScript (.mps) file." position="bottom">
+                            <button 
+                                className="p-2 bg-surface hover:bg-secondary/10 text-text-dim hover:text-secondary border border-surface-lighter hover:border-secondary/30 rounded-lg transition-all"
+                                onClick={handleWrapInScript}
+                            >
+                                <FileCode size={18} />
+                            </button>
+                        </Tooltip>
                         
-                        <button 
-                            className="p-2 bg-surface hover:bg-surface-light text-text-dim hover:text-text-main border border-surface-lighter rounded-lg transition-all"
-                            onClick={onDuplicate}
-                            title="Duplicate"
-                        >
-                            <Copy size={18} />
-                        </button>
+                        <Tooltip name="Duplicate" description="Create a copy of this macro in your library." position="bottom" align="end">
+                            <button 
+                                className="p-2 bg-surface hover:bg-surface-light text-text-dim hover:text-text-main border border-surface-lighter rounded-lg transition-all"
+                                onClick={onDuplicate}
+                            >
+                                <Copy size={18} />
+                            </button>
+                        </Tooltip>
                         
-                        <button 
-                            className="p-2 bg-surface hover:bg-red-900/40 text-text-dim hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
-                            onClick={onRemove}
-                            title="Delete Macro"
-                        >
-                            <Trash2 size={18} />
-                        </button>
+                        <Tooltip name="Delete Macro" description="Permanently remove this macro from your system." position="bottom" align="end">
+                            <button 
+                                className="p-2 bg-surface hover:bg-red-900/40 text-text-dim hover:text-red-400 border border-surface-lighter hover:border-red-500/30 rounded-lg transition-all"
+                                onClick={onRemove}
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </Tooltip>
                     </div>
                 </div>
 
