@@ -36,6 +36,7 @@ pub struct AppState {
     pub last_result:    Option<bool>,
     pub loop_cap:       u32,
     pub record_stop_tx: Option<oneshot::Sender<()>>,
+    pub record_done_rx: Option<oneshot::Receiver<()>>,
 }
 
 impl AppState {
@@ -48,6 +49,7 @@ impl AppState {
             last_result:    None,
             loop_cap:       1000,
             record_stop_tx: None,
+            record_done_rx: None,
         };
         if let Err(e) = s.load_hotkeys() {
             warn!("failed to load hotkeys: {}", e);

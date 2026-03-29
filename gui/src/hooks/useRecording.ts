@@ -22,6 +22,7 @@ export function useRecording(onSaved: (path: string) => void) {
             setState("idle")
             setOutputPath(null)
         } catch (e) {
+            console.error("Stop recording failed:", e)
             setError(String(e))
             setState("idle")
         }
@@ -29,15 +30,25 @@ export function useRecording(onSaved: (path: string) => void) {
 
     const startRecording = useCallback(async () => {
         setError(null)
+        console.log("Recording: Initiating save dialog...")
         try {
-            const path = await tauriInvoke<string | null>("save_as_nitsrec")
-            if (!path) return
+            const path = await tauriInvoke<string | null>("save_as_mpr")
+            if (!path) {
+                console.log("Recording: User cancelled save dialog.")
+                return
+            }
+            console.log("Recording: Path selected:", path)
             setOutputPath(path)
+            
+            console.log("Recording: Sending start_record command...")
             await tauriInvoke("start_record", { outputPath: path })
+            console.log("Recording: Start success! Moving to recording state.")
             setState("recording")
         } catch (e) {
-            setError(String(e))
+            console.error("Start recording failed:", e)
+            setError(`Start failed: ${String(e)}`)
             setState("idle")
+            // Keep error visible for awareness
         }
     }, [])
 

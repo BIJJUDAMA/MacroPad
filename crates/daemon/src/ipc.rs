@@ -184,62 +184,104 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState, scheduler: &Arc<Sc
         }
 
         IpcCommand::Record { output_path, .. } => {
-            {
-                let mut s = state.lock().unwrap();
-                if s.is_busy() { return IpcResponse::Error { message: "daemon is busy".into() }; }
-                s.set_recording();
-            }
-            let (stop_tx, stop_rx) = oneshot::channel::<()>();
-            {
-                let mut s = state.lock().unwrap();
-                s.record_stop_tx = Some(stop_tx);
-            }
-            let state_clone = state.clone();
-            tokio::spawn(async move {
-                match macropad_core::Recorder::start() {
-                    Ok(mut recorder) => {
-                        let mut events = Vec::new();
-                        tokio::select! {
-                            _ = async { while let Some(e) = recorder.rx.recv().await { events.push(e); } } => {}
-                            _ = stop_rx => { debug!("stop signal received"); }
+            let mut s = state.lock().unwrap();
+            if s.is_busy() { return IpcResponse::Error { message: "daemon is busy".into() }; }
+            s.set_recording();
+
+            info!("Daemon: IpcCommand::Record received for path: {:?}", output_path);
+            match macropad_core::Recorder::start() {
+                    let (stop_tx, stop_rx) = oneshot::channel();
+                    let (done_tx, done_rx) = oneshot::channel();
+                    s.record_stop_tx = Some(stop_tx);
+                    s.record_done_rx = Some(done_rx);
+                    
+                    let state_clone = state.clone();
+                    let output_path = output_path.clone();
+
+                    tokio::spawn(async move {
+                        info!("Daemon: Capture task spawned for {:?}", output_path);
+                        let mut events_arr = Vec::new();
+                        let mut stop_rx = stop_rx;
+                        loop {
+                            tokio::select! {
+                                res = recorder.rx.recv() => {
+                                    match res {
+                                        Some(e) => { events_arr.push(e); }
+                                        None => {
+                                            warn!("Daemon: Capture channel closed unexpectedly (hook thread died).");
+                                            break;
+                                        }
+                                    }
+                                }
+                                _ = &mut stop_rx => {
+                                    debug!("Daemon: Stop signal received during recording collection");
+                                    break;
+                                }
+                            }
                         }
-                        let events = consolidate_mouse_segments(&events);
-                    let rec = macropad_core::models::MacropadRec {
-                        meta: macropad_core::models::Metadata {
-                            version: 1,
-                            name:    output_path.file_stem().and_then(|n| n.to_str()).unwrap_or("recording").into(),
-                            created: chrono::Local::now().date_naive(),
-                            tags:    vec![],
-                            requires: vec![],
-                        },
-                        playback: macropad_core::models::PlaybackConfig {
-                            recorded_resolution: {
-                                let (w, h) = macropad_core::player::get_screen_resolution();
-                                Some([w, h])
+                        
+                        // Drain any remaining messages
+                        while let Ok(e) = recorder.rx.try_recv() {
+                            events_arr.push(e);
+                        }
+
+                        info!("Daemon: Recording finished. Captured {} raw events.", events_arr.len());
+                        let events = consolidate_mouse_segments(&events_arr);
+                        info!("Daemon: Finalized recording with {} consolidated events.", events.len());
+
+                        let rec = macropad_core::models::MacropadRec {
+                            meta: macropad_core::models::Metadata {
+                                version: 1,
+                                name: output_path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
+                                tags: Vec::new(),
+                                created: chrono::Local::now().date_naive(),
+                                requires: Vec::new(),
                             },
-                            ..Default::default()
-                        },
-                        vars:     None,
-                        events,
-                    };
-                        if let Err(e) = macropad_core::save(&rec, &output_path) { error!("save error: {}", e); }
+                            playback: macropad_core::models::PlaybackConfig::default(),
+                            vars:     None,
+                            events,
+                        };
+
+                        info!("Daemon: Saving recording to {:?}", output_path);
+                        if let Err(e) = macropad_core::save(&rec, &output_path) {
+                            error!("Daemon: Save error: {}", e);
+                        } else {
+                            info!("Daemon: File saved successfully.");
+                        }
+
                         let mut s = state_clone.lock().unwrap();
                         s.record_stop_tx = None;
+                        s.record_done_rx = None;
                         s.set_idle();
-                    }
-                    Err(e) => {
-                        error!("recorder error: {}", e);
-                        state_clone.lock().unwrap().set_idle();
-                    }
+                        let _ = done_tx.send(());
+                    });
+
+                    IpcResponse::Ok
                 }
-            });
-            IpcResponse::Ok
+                Err(e) => {
+                    error!("Daemon: Failed to start recorder: {}", e);
+                    s.set_idle();
+                    IpcResponse::Error { message: e.to_string() }
+                }
+            }
         }
 
         IpcCommand::StopRecord => {
-            let mut s = state.lock().unwrap();
-            if let Some(tx) = s.record_stop_tx.take() { let _ = tx.send(()); }
-            s.set_idle();
+            info!("Daemon: IpcCommand::StopRecord received.");
+            let done_rx = {
+                let mut s = state.lock().unwrap();
+                if let Some(tx) = s.record_stop_tx.take() { 
+                    let _ = tx.send(()); 
+                }
+                s.record_done_rx.take()
+            };
+
+            if let Some(rx) = done_rx {
+                info!("Daemon: Waiting for recording task to finalize save...");
+                let _ = rx.await;
+                info!("Daemon: Recording task finalized. Responding to GUI.");
+            }
+
             IpcResponse::Ok
         }
 

@@ -126,14 +126,24 @@ fn save_as_mpr(app: tauri::AppHandle) -> Result<Option<String>, String> {
         .file()
         .add_filter("MacroRecording files", &["mpr"])
         .blocking_save_file();
-    Ok(path.map(|p| p.to_string()))
+    
+    let result = path.and_then(|p| p.as_path().map(|ap| ap.to_string_lossy().to_string()));
+    tracing::info!("GUI Backend: save_as_mpr selected path: {:?}", result);
+    Ok(result)
 }
 
 #[tauri::command]
 async fn start_record(
+    window: tauri::Window,
     state: State<'_, ConfigState>,
     output_path: String,
 ) -> Result<(), String> {
+    tracing::info!("start_record requested for path: {}", output_path);
+    
+    // Minimize the window so user can interact with other apps
+    if let Err(e) = window.minimize() {
+        tracing::warn!("Failed to minimize window: {}", e);
+    }
     let options = {
         let config = state.config.lock().map_err(|e| e.to_string())?;
         config.recording_defaults.clone()
@@ -143,10 +153,24 @@ async fn start_record(
         output_path: PathBuf::from(output_path),
         options: Some(options),
     };
-    match send_ipc(cmd).await? {
-        IpcResponse::Ok => Ok(()),
-        IpcResponse::Error { message } => Err(message),
-        _ => Err("unexpected response".into()),
+    
+    tracing::info!("GUI Backend: Sending Record IPC command to daemon...");
+    let response = send_ipc(cmd).await?;
+    tracing::info!("GUI Backend: Received daemon response: {:?}", response);
+
+    match response {
+        IpcResponse::Ok => {
+            tracing::info!("GUI Backend: Recording successfully started in daemon.");
+            Ok(())
+        },
+        IpcResponse::Error { message } => {
+            tracing::error!("GUI Backend: Daemon reported error: {}", message);
+            Err(format!("Daemon error: {}", message))
+        },
+        _ => {
+            tracing::error!("GUI Backend: Unexpected response from daemon: {:?}", response);
+            Err("unexpected response from daemon".into())
+        },
     }
 }
 
@@ -216,15 +240,12 @@ fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), Strin
 
 #[tauri::command]
 fn set_theme_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
-    // Try "main", then try the first available window
     let window = app.get_webview_window("main")
         .or_else(|| app.webview_windows().values().next().cloned())
         .ok_or("could not find any window to set icon")?;
     
     tracing::info!("Setting {} theme icon", theme);
-    // However, since we moved them to gui/public, they are part of the frontend build.
-    // To be same for both, we can use the app's resource directory if they are bundled.
-    // For now, let's try reading them from the relative public folder during dev.
+ 
     
     let icon_name = if theme == "dark" { "Logo_Dark.png" } else { "Logo_Light.png" };
     
@@ -243,9 +264,6 @@ fn set_theme_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
             std::fs::read(base.join(icon_name))
         })
         .map_err(|e| format!("failed to read icon {}: {}", icon_name, e))?;
-
-    // RESIZE: The 2.7MB icons are likely too large for Windows taskbar.
-    // We downscale to a standard 256x256 PNG buffer.
     let img = image::load_from_memory(&bytes)
         .map_err(|e| format!("failed to load image {}: {}", icon_name, e))?;
     
@@ -302,6 +320,19 @@ fn browse_macro_script(app: tauri::AppHandle) -> Result<Option<String>, String> 
         .dialog()
         .file()
         .add_filter("MacroScript files", &["mps"])
+        .blocking_pick_file();
+
+    Ok(path.map(|p| p.to_string()))
+}
+
+#[tauri::command]
+fn browse_any_macro(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let path = app
+        .dialog()
+        .file()
+        .add_filter("Macro files (*.mpr, *.mps)", &["mpr", "mps"])
         .blocking_pick_file();
 
     Ok(path.map(|p| p.to_string()))
@@ -528,6 +559,7 @@ pub fn run() {
             remove_scheduled_task,
             get_scheduled_tasks,
             set_theme_icon,
+            browse_any_macro,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

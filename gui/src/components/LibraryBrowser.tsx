@@ -34,7 +34,7 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
 
     async function handleBrowse() {
         try {
-            const path = await tauriInvoke<string | null>("browse_nitsrec")
+            const path = await tauriInvoke<string | null>("browse_any_macro")
             if (path) addMacro(path)
         } catch (e) {
             console.error(e)
@@ -60,42 +60,41 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                         <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-surface border border-surface-lighter rounded-lg mr-2 group relative cursor-help">
                             <Zap size={14} className="text-secondary animate-pulse" />
                             <span className="text-[10px] font-bold uppercase tracking-widest text-tertiary">Engine Ready</span>
-                            
+
                             {/* Tooltip for status */}
                             <div className="absolute top-full right-0 mt-2 w-64 p-4 bg-surface border border-surface-lighter rounded-xl shadow-2xl z-[70] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
                                 <h4 className="text-xs font-bold text-primary mb-2 flex items-center gap-2">
                                     <Zap size={12} /> Execution Engine
                                 </h4>
                                 <p className="text-[10px] leading-relaxed text-tertiary">
-                                    The MacroNits engine is connected. It handles smooth mouse movements, high-fidelity keyboard emulation, and script logic.
+                                    The Macropad engine is connected. It handles smooth mouse movements, high-fidelity keyboard emulation, and script logic.
                                 </p>
                             </div>
                         </div>
                     )}
                     <button
-                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all shadow-lg ${
-                            recState !== "idle" 
-                            ? "bg-surface text-tertiary border border-surface-lighter opacity-50 cursor-not-allowed" 
-                            : "bg-primary text-neutral hover:bg-primary-hover shadow-primary/20"
-                        }`}
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all shadow-lg ${recState !== "idle"
+                                ? "bg-surface text-tertiary border border-surface-lighter opacity-50 cursor-not-allowed"
+                                : "bg-primary text-neutral hover:bg-primary-hover shadow-primary/20"
+                            }`}
                         onClick={startRecording}
                         disabled={recState !== "idle"}
                     >
-                        <Radio size={16} /> 
+                        <Radio size={16} />
                         {recState === "idle" ? "Record" : recState === "recording" ? "Recording..." : "Saving..."}
                     </button>
-                    
+
                     <Tooltip name="Add Macro" description="Browse your computer to add existing .mpr or .mps files to your library.">
-                        <button 
+                        <button
                             className="flex items-center gap-2 bg-surface hover:bg-surface-light border border-surface-lighter text-text-dim hover:text-text-main px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors"
                             onClick={handleBrowse}
                         >
                             <Plus size={18} /> Add
                         </button>
                     </Tooltip>
-                    
+
                     <Tooltip name="Refresh Library" description="Rescan your library folder for any new or modified macro files." align="end">
-                        <button 
+                        <button
                             className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-text-main rounded-lg transition-colors"
                             onClick={refresh}
                         >
@@ -122,16 +121,15 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                         onChange={e => setSearch(e.target.value)}
                     />
                 </div>
-                
+
                 {allTags.length > 0 && (
                     <div className="flex gap-2 flex-wrap items-center">
                         <span className="text-xs font-mono text-tertiary uppercase tracking-wider mr-2">Filters:</span>
                         <button
-                            className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-colors border ${
-                                tagFilter === null 
-                                ? "bg-secondary/15 text-secondary border-secondary/30" 
-                                : "bg-surface text-tertiary border-surface-lighter hover:border-tertiary"
-                            }`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-colors border ${tagFilter === null
+                                    ? "bg-secondary/15 text-secondary border-secondary/30"
+                                    : "bg-surface text-tertiary border-surface-lighter hover:border-tertiary"
+                                }`}
                             onClick={() => setTagFilter(null)}
                         >
                             All
@@ -139,11 +137,10 @@ export function LibraryBrowser({ paths, setPaths }: Props) {
                         {allTags.map(tag => (
                             <button
                                 key={tag}
-                                className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-colors border ${
-                                    tagFilter === tag 
-                                    ? "bg-secondary/15 text-secondary border-secondary/30" 
-                                    : "bg-surface text-tertiary border-surface-lighter hover:border-tertiary"
-                                }`}
+                                className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-colors border ${tagFilter === tag
+                                        ? "bg-secondary/15 text-secondary border-secondary/30"
+                                        : "bg-surface text-tertiary border-surface-lighter hover:border-tertiary"
+                                    }`}
                                 onClick={() => setTagFilter(tag === tagFilter ? null : tag)}
                             >
                                 {tag}

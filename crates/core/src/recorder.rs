@@ -31,10 +31,17 @@ impl Recorder {
             let mut last_x      = 0f64;
             let mut last_y      = 0f64;
             let mut last_move_t = 0u64;
+            let mut count       = 0u64;
+
+            tracing::info!("macropad_core: Low-level capture thread started.");
 
             let callback = {
                 let event_tx = event_tx.clone();
                 move |rdev_event: rdev::Event| {
+                    count += 1;
+                    if count % 100 == 0 {
+                        tracing::debug!("macropad_core: Captured {} events so far...", count);
+                    }
                     let time_ms = start.elapsed().as_millis() as u64;
 
                     match &rdev_event.event_type {
@@ -81,8 +88,9 @@ impl Recorder {
             };
 
             if let Err(e) = listen(callback) {
-                error!("rdev listen error: {:?}", e);
+                error!("macropad_core: OS Hook - listen error: {:?}", e);
             }
+            tracing::info!("macropad_core: Capture thread exiting.");
         });
 
         Ok(Self { rx: event_rx })

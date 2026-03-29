@@ -153,10 +153,11 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             const p = await tauriInvoke<string | null>("save_as_mpr")
             if (!p) return
             
-            await tauriInvoke("start_record", { path: p })
+            await tauriInvoke("start_record", { outputPath: p })
             setPendingMacroPath(p)
             setIsRecording(true)
         } catch (e) {
+            console.error("Recording start failed:", e)
             setError(String(e))
         }
     }
