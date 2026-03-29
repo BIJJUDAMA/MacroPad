@@ -4,7 +4,7 @@ use std::thread;
 use std::time::{Instant};
 use thiserror::Error;
 use tokio::sync::mpsc as tokio_mpsc;
-use tracing::{error, debug};
+use tracing::error;
 
 #[derive(Debug, Error)]
 pub enum RecorderError {

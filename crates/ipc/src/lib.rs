@@ -5,6 +5,33 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use macropad_core::models::RecordingOptions;
 use thiserror::Error;
+use chrono::{DateTime, Local};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScheduledTask {
+    pub id:          String,
+    pub name:        String,
+    pub macro_path:  PathBuf,
+    pub schedule:    Schedule,
+    pub enabled:     bool,
+    pub last_run:    Option<DateTime<Local>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Schedule {
+    Once {
+        at_hour:   u32,
+        at_minute: u32,
+    },
+    Interval {
+        every_secs: u64,
+    },
+    Daily {
+        at_hour:   u32,
+        at_minute: u32,
+    },
+}
 
 #[cfg(windows)]
 pub const PIPE_NAME: &str = r"\\.\pipe\macropad-daemon";
@@ -59,6 +86,18 @@ pub enum IpcCommand {
     Status,
     ListMacros,
     Ping,
+    SetHotkey {
+        macro_path:  PathBuf,
+        hotkey_str:  String,
+    },
+    GetHotkeys,
+    AddScheduledTask {
+        task: ScheduledTask,
+    },
+    RemoveScheduledTask {
+        id: String,
+    },
+    GetScheduledTasks,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,4 +108,6 @@ pub enum IpcResponse {
     Error  { message: String },
     Status { status: String, last_result: Option<bool> },
     Macros { names: Vec<String> },
+    Hotkeys { bindings: HashMap<String, String> },
+    ScheduledTasks { tasks: Vec<ScheduledTask> },
 }

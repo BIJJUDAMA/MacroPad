@@ -8,4 +8,5 @@ serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror  = "1"
 tokio      = { version = "1", features = ["io-util", "net", "sync"] }
+chrono      = { version = "0.4", features = ["serde"] }
 macropad-core = { path = "../core" }

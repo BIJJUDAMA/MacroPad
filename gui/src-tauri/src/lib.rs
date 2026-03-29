@@ -350,6 +350,55 @@ fn wrap_recording_in_script(macro_path: String) -> Result<String, String> {
     Ok(final_script_path.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+async fn set_hotkey(macro_path: String, hotkey_str: String) -> Result<(), String> {
+    match send_ipc(IpcCommand::SetHotkey {
+        macro_path: PathBuf::from(macro_path),
+        hotkey_str,
+    }).await? {
+        IpcResponse::Ok => Ok(()),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+async fn get_hotkeys() -> Result<std::collections::HashMap<String, String>, String> {
+    match send_ipc(IpcCommand::GetHotkeys).await? {
+        IpcResponse::Hotkeys { bindings } => Ok(bindings),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+async fn add_scheduled_task(task: macropad_ipc::ScheduledTask) -> Result<(), String> {
+    match send_ipc(IpcCommand::AddScheduledTask { task }).await? {
+        IpcResponse::Ok => Ok(()),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+async fn remove_scheduled_task(id: String) -> Result<(), String> {
+    match send_ipc(IpcCommand::RemoveScheduledTask { id }).await? {
+        IpcResponse::Ok => Ok(()),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+#[tauri::command]
+async fn get_scheduled_tasks() -> Result<Vec<macropad_ipc::ScheduledTask>, String> {
+    match send_ipc(IpcCommand::GetScheduledTasks).await? {
+        IpcResponse::ScheduledTasks { tasks } => Ok(tasks),
+        IpcResponse::Error { message } => Err(message),
+        _ => Err("unexpected response".into()),
+    }
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tracing_subscriber::fmt::init();
@@ -415,6 +464,11 @@ pub fn run() {
             save_as_mpr,
             start_record,
             stop_record,
+            set_hotkey,
+            get_hotkeys,
+            add_scheduled_task,
+            remove_scheduled_task,
+            get_scheduled_tasks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

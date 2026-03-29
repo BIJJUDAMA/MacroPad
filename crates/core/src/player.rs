@@ -7,7 +7,7 @@ use std::thread;
 use std::time::Duration;
 use thiserror::Error;
 use tokio::sync::watch;
-use tracing::{info, debug, warn};
+use tracing::debug;
 
 #[derive(Debug, Error)]
 pub enum PlayerError {

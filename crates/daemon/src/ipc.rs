@@ -1,10 +1,13 @@
 use crate::state::SharedState;
-use macropad_ipc::{IpcCommand, IpcResponse};
+use crate::scheduler::Scheduler;
+use macropad_ipc::{IpcCommand, IpcResponse, ScheduledTask};
+use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::oneshot;
 use macropad_core::recorder::consolidate_mouse_segments;
-use tracing::{info, error, debug};
+use tracing::{info, error, debug, warn};
+use script::run_script;
 
 #[cfg(windows)]
 use macropad_ipc::PIPE_NAME;
@@ -23,20 +26,20 @@ pub enum IpcError {
     Json(#[from] serde_json::Error),
 }
 
-pub async fn start_ipc_server(state: SharedState) -> Result<(), IpcError> {
+pub async fn start_ipc_server(state: SharedState, scheduler: Arc<Scheduler>) -> Result<(), IpcError> {
     #[cfg(windows)]
     {
-        start_windows_pipe(state).await
+        start_windows_pipe(state, scheduler).await
     }
 
     #[cfg(not(windows))]
     {
-        start_unix_socket(state).await
+        start_unix_socket(state, scheduler).await
     }
 }
 
 #[cfg(windows)]
-async fn start_windows_pipe(state: SharedState) -> Result<(), IpcError> {
+async fn start_windows_pipe(state: SharedState, scheduler: Arc<Scheduler>) -> Result<(), IpcError> {
     info!("listening on pipe: {}", PIPE_NAME);
 
     loop {
@@ -47,20 +50,21 @@ async fn start_windows_pipe(state: SharedState) -> Result<(), IpcError> {
         server.connect().await?;
 
         let state_clone = state.clone();
+        let scheduler_clone = scheduler.clone();
         tokio::spawn(async move {
-            handle_connection_windows(server, state_clone).await;
+            handle_connection_windows(server, state_clone, scheduler_clone).await;
         });
     }
 }
 
 #[cfg(windows)]
-async fn handle_connection_windows(pipe: NamedPipeServer, state: SharedState) {
+async fn handle_connection_windows(pipe: NamedPipeServer, state: SharedState, scheduler: Arc<Scheduler>) {
     let (reader, mut writer) = tokio::io::split(pipe);
     let mut lines = BufReader::new(reader).lines();
 
     while let Ok(Some(line)) = lines.next_line().await {
         let response = match serde_json::from_str::<IpcCommand>(&line) {
-            Ok(cmd) => handle_command(cmd, &state).await,
+            Ok(cmd) => handle_command(cmd, &state, &scheduler).await,
             Err(e)  => IpcResponse::Error { message: e.to_string() },
         };
 
@@ -71,7 +75,7 @@ async fn handle_connection_windows(pipe: NamedPipeServer, state: SharedState) {
 }
 
 #[cfg(not(windows))]
-async fn start_unix_socket(state: SharedState) -> Result<(), IpcError> {
+async fn start_unix_socket(state: SharedState, scheduler: Arc<Scheduler>) -> Result<(), IpcError> {
     use tokio::net::UnixListener;
 
     if std::path::Path::new(SOCKET_PATH).exists() {
@@ -84,20 +88,21 @@ async fn start_unix_socket(state: SharedState) -> Result<(), IpcError> {
     loop {
         let (stream, _) = listener.accept().await?;
         let state_clone = state.clone();
+        let scheduler_clone = scheduler.clone();
         tokio::spawn(async move {
-            handle_connection_unix(stream, state_clone).await;
+            handle_connection_unix(stream, state_clone, scheduler_clone).await;
         });
     }
 }
 
 #[cfg(not(windows))]
-async fn handle_connection_unix(stream: tokio::net::UnixStream, state: SharedState) {
+async fn handle_connection_unix(stream: tokio::net::UnixStream, state: SharedState, scheduler: Arc<Scheduler>) {
     let (reader, mut writer) = stream.into_split();
     let mut lines = BufReader::new(reader).lines();
 
     while let Ok(Some(line)) = lines.next_line().await {
         let response = match serde_json::from_str::<IpcCommand>(&line) {
-            Ok(cmd) => handle_command(cmd, &state).await,
+            Ok(cmd) => handle_command(cmd, &state, &scheduler).await,
             Err(e)  => IpcResponse::Error { message: e.to_string() },
         };
 
@@ -107,7 +112,7 @@ async fn handle_connection_unix(stream: tokio::net::UnixStream, state: SharedSta
     }
 }
 
-async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
+async fn handle_command(cmd: IpcCommand, state: &SharedState, scheduler: &Arc<Scheduler>) -> IpcResponse {
     match cmd {
         IpcCommand::Ping => IpcResponse::Pong,
 
@@ -126,12 +131,29 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
         }
 
         IpcCommand::Play { path, speed, dry_run, vars, overrides } => {
+            let is_script = path.extension().map_or(false, |e| e == "mps");
+
+            if is_script {
+                {
+                    let mut s = state.lock().unwrap();
+                    if s.is_busy() { return IpcResponse::Error { message: "daemon is busy".into() }; }
+                    s.set_playing(path.file_name().and_then(|n| n.to_str()).unwrap_or("script"));
+                }
+                let state_clone = state.clone();
+                tokio::spawn(async move {
+                    let result = run_script(&path, dry_run.unwrap_or(false), vars).await;
+                    let mut s = state_clone.lock().unwrap();
+                    s.last_result = Some(result.is_ok());
+                    s.set_idle();
+                });
+                return IpcResponse::Ok;
+            }
+
             let mut rec = match macropad_core::load(&path) {
                 Ok(r)  => r,
                 Err(e) => return IpcResponse::Error { message: e.to_string() },
             };
 
-            // Apply runtime overrides on top of the file's PlaybackConfig
             if let Some(ov) = overrides {
                 if let Some(s) = ov.speed            { rec.playback.speed = s; }
                 if let Some(l) = ov.loop_count       { rec.playback.loop_count = l; }
@@ -146,25 +168,13 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                 if s.is_busy() {
                     return IpcResponse::Error { message: "daemon is busy".into() };
                 }
-                s.set_playing(
-                    path.file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("unknown"),
-                );
+                s.set_playing(path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown"));
             }
 
             let state_clone = state.clone();
             tokio::spawn(async move {
                 let (_player, abort_rx) = macropad_core::Player::new();
-                let result = macropad_core::play(
-                    &rec,
-                    speed,
-                    dry_run.unwrap_or(false),
-                    abort_rx,
-                    vars.as_ref(),
-                )
-                .await;
-
+                let result = macropad_core::play(&rec, speed, dry_run.unwrap_or(false), abort_rx, vars.as_ref()).await;
                 let mut s = state_clone.lock().unwrap();
                 s.last_result = Some(result.is_ok());
                 s.set_idle();
@@ -176,49 +186,28 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
         IpcCommand::Record { output_path, .. } => {
             {
                 let mut s = state.lock().unwrap();
-                if s.is_busy() {
-                    return IpcResponse::Error { message: "daemon is busy".into() };
-                }
+                if s.is_busy() { return IpcResponse::Error { message: "daemon is busy".into() }; }
                 s.set_recording();
             }
-
             let (stop_tx, stop_rx) = oneshot::channel::<()>();
-
             {
                 let mut s = state.lock().unwrap();
                 s.record_stop_tx = Some(stop_tx);
             }
-
             let state_clone = state.clone();
             tokio::spawn(async move {
                 match macropad_core::Recorder::start() {
                     Ok(mut recorder) => {
                         let mut events = Vec::new();
-
                         tokio::select! {
-                            _ = async {
-                                while let Some(e) = recorder.rx.recv().await {
-                                    events.push(e);
-                                }
-                            } => {}
-                            _ = stop_rx => {
-                                debug!("stop signal received");
-                            }
+                            _ = async { while let Some(e) = recorder.rx.recv().await { events.push(e); } } => {}
+                            _ = stop_rx => { debug!("stop signal received"); }
                         }
-
-                        info!("recording stopped, {} events captured", events.len());
-
-                    // consolidate raw mouse moves into segments
-                    let events = consolidate_mouse_segments(&events);
-                    debug!("after consolidation: {} events", events.len());
+                        let events = consolidate_mouse_segments(&events);
                     let rec = macropad_core::models::MacropadRec {
                         meta: macropad_core::models::Metadata {
                             version: 1,
-                            name:    output_path
-                                .file_stem()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or("recording")
-                                .into(),
+                            name:    output_path.file_stem().and_then(|n| n.to_str()).unwrap_or("recording").into(),
                             created: chrono::Local::now().date_naive(),
                             tags:    vec![],
                             requires: vec![],
@@ -233,34 +222,23 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                         vars:     None,
                         events,
                     };
-
-                        if let Err(e) = macropad_core::save(&rec, &output_path) {
-                            error!("save error: {}", e);
-                        } else {
-                            info!("saved to {:?}", output_path);
-                        }
-
+                        if let Err(e) = macropad_core::save(&rec, &output_path) { error!("save error: {}", e); }
                         let mut s = state_clone.lock().unwrap();
                         s.record_stop_tx = None;
                         s.set_idle();
                     }
                     Err(e) => {
                         error!("recorder error: {}", e);
-                        let mut s = state_clone.lock().unwrap();
-                        s.set_idle();
+                        state_clone.lock().unwrap().set_idle();
                     }
                 }
             });
-
             IpcResponse::Ok
         }
 
         IpcCommand::StopRecord => {
             let mut s = state.lock().unwrap();
-            if let Some(tx) = s.record_stop_tx.take() {
-                let _ = tx.send(());
-                debug!("sent stop signal to recorder");
-            }
+            if let Some(tx) = s.record_stop_tx.take() { let _ = tx.send(()); }
             s.set_idle();
             IpcResponse::Ok
         }
@@ -268,6 +246,48 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
         IpcCommand::StopPlayback => {
             state.lock().unwrap().set_idle();
             IpcResponse::Ok
+        }
+
+        IpcCommand::SetHotkey { macro_path, hotkey_str } => {
+            use platform::hotkey::Hotkey;
+            let hk = match Hotkey::parse(&hotkey_str) {
+                Ok(h)  => h,
+                Err(e) => return IpcResponse::Error { message: e.to_string() },
+            };
+            {
+                let mut s = state.lock().unwrap();
+                if let Err(e) = s.hotkeys.register(hk, &macro_path.to_string_lossy()) {
+                    return IpcResponse::Error { message: e.to_string() };
+                }
+                let _ = s.save_hotkeys();
+            }
+            IpcResponse::Ok
+        }
+
+        IpcCommand::GetHotkeys => {
+            let s = state.lock().unwrap();
+            let mut bindings = std::collections::HashMap::new();
+            for (hk, path) in s.hotkeys.all_bindings() {
+                bindings.insert(hk.to_display_string(), path.clone());
+            }
+            IpcResponse::Hotkeys { bindings }
+        }
+
+        IpcCommand::AddScheduledTask { task } => {
+            scheduler.add_task(task);
+            IpcResponse::Ok
+        }
+
+        IpcCommand::RemoveScheduledTask { id } => {
+            if scheduler.remove_task(&id) {
+                IpcResponse::Ok
+            } else {
+                IpcResponse::Error { message: format!("task {} not found", id) }
+            }
+        }
+
+        IpcCommand::GetScheduledTasks => {
+            IpcResponse::ScheduledTasks { tasks: scheduler.list_tasks() }
         }
     }
 }

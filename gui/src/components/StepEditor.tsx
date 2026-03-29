@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react"
 import { HumanStep } from "./HumanStep"
 import { RawEvent, HumanAction, EditorView } from "../types/editor"
 import { MacroInfo } from "../types/macro"
-import { Save, X, Code2, Users, Activity, History, RotateCcw } from 'lucide-react'
+import { Save as SaveIcon, X, Code2, Users, Activity, History, RotateCcw } from 'lucide-react'
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -342,7 +342,7 @@ export function StepEditor({ macro, onClose }: Props) {
                             onClick={handleSave} 
                             disabled={saving}
                         >
-                            <Save size={16} className={saving ? 'animate-pulse' : ''} />
+                            <SaveIcon size={16} className={saving ? 'animate-pulse' : ''} />
                             {saving ? "Saving" : saved ? "Saved" : "Save"}
                         </button>
                         

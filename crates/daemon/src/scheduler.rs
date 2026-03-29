@@ -2,55 +2,84 @@ use crate::state::SharedState;
 use chrono::{Local, Timelike};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tokio::time::{sleep, Duration};
+use tracing::{info, error, warn, debug};
+use script::run_script;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScheduledTask {
-    pub id:          String,
-    pub macro_path:  PathBuf,
-    pub schedule:    Schedule,
-    pub enabled:     bool,
-}
+use macropad_ipc::{ScheduledTask, Schedule};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum Schedule {
-    Once {
-        at_hour:   u32,
-        at_minute: u32,
-    },
-    Interval {
-        every_secs: u64,
-    },
-    Daily {
-        at_hour:   u32,
-        at_minute: u32,
-    },
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct ScheduleStore {
+    tasks: Vec<ScheduledTask>,
 }
 
 pub struct Scheduler {
     tasks:  Arc<Mutex<HashMap<String, ScheduledTask>>>,
     state:  SharedState,
+    path:   PathBuf,
 }
 
 impl Scheduler {
-    pub fn new(state: SharedState) -> Self {
-        Self {
-            tasks: Arc::new(Mutex::new(HashMap::new())),
+    pub fn new(state: SharedState, path: PathBuf) -> Self {
+        let tasks = Arc::new(Mutex::new(HashMap::new()));
+        let mut s = Self {
+            tasks,
             state,
+            path,
+        };
+        if let Err(e) = s.load() {
+            warn!("failed to load schedule: {}", e);
         }
+        s
+    }
+
+    fn load(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        if !self.path.exists() {
+            return Ok(());
+        }
+        let content = std::fs::read_to_string(&self.path)?;
+        let store: ScheduleStore = toml::from_str(&content)?;
+        let mut tasks = self.tasks.lock().unwrap();
+        for task in store.tasks {
+            tasks.insert(task.id.clone(), task);
+        }
+        info!("loaded {} scheduled tasks", tasks.len());
+        Ok(())
+    }
+
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let tasks = self.tasks.lock().unwrap();
+        let store = ScheduleStore {
+            tasks: tasks.values().cloned().collect(),
+        };
+        let content = toml::to_string_pretty(&store)?;
+        if let Some(parent) = self.path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(&self.path, content)?;
+        debug!("saved schedule to {:?}", self.path);
+        Ok(())
     }
 
     pub fn add_task(&self, task: ScheduledTask) {
-        let mut tasks = self.tasks.lock().unwrap();
-        tasks.insert(task.id.clone(), task);
+        {
+            let mut tasks = self.tasks.lock().unwrap();
+            tasks.insert(task.id.clone(), task);
+        }
+        let _ = self.save();
     }
 
     pub fn remove_task(&self, id: &str) -> bool {
-        let mut tasks = self.tasks.lock().unwrap();
-        tasks.remove(id).is_some()
+        let removed = {
+            let mut tasks = self.tasks.lock().unwrap();
+            tasks.remove(id).is_some()
+        };
+        if removed {
+            let _ = self.save();
+        }
+        removed
     }
 
     pub fn list_tasks(&self) -> Vec<ScheduledTask> {
@@ -58,11 +87,12 @@ impl Scheduler {
         tasks.values().cloned().collect()
     }
 
-    pub async fn run(self) {
+    pub async fn run(&self) {
         let tasks = Arc::clone(&self.tasks);
         let state = Arc::clone(&self.state);
 
         tokio::spawn(async move {
+            info!("scheduler service started");
             loop {
                 let now = Local::now();
                 let current_hour   = now.hour();
@@ -100,7 +130,7 @@ impl Scheduler {
                         let state_clone = Arc::clone(&state);
 
                         tokio::spawn(async move {
-                            run_macro_task(path, state_clone).await;
+                            run_macro_task_background(path, state_clone).await;
                         });
                     }
                 }
@@ -111,15 +141,7 @@ impl Scheduler {
     }
 }
 
-async fn run_macro_task(path: PathBuf, state: SharedState) {
-    let rec = match macropad_core::load(&path) {
-        Ok(r)  => r,
-        Err(e) => {
-            eprintln!("[scheduler] failed to load {:?}: {}", path, e);
-            return;
-        }
-    };
-
+async fn run_macro_task_background(path: PathBuf, state: SharedState) {
     let name = path
         .file_name()
         .and_then(|n| n.to_str())
@@ -129,14 +151,27 @@ async fn run_macro_task(path: PathBuf, state: SharedState) {
     {
         let mut s = state.lock().unwrap();
         if s.is_busy() {
-            eprintln!("[scheduler] skipping '{}' — daemon is busy", name);
+            warn!("skipping scheduled '{}' — daemon is busy", name);
             return;
         }
         s.set_playing(&name);
     }
 
-    let (_player, abort_rx) = macropad_core::Player::new();
-    let result = macropad_core::play(&rec, None, false, abort_rx, None).await;
+    info!("running scheduled task: {}", name);
+
+    let is_script = path.extension().map_or(false, |e| e == "mps");
+
+    let result = if is_script {
+        run_script(&path, false, None).await.map_err(|e| e.to_string())
+    } else {
+        match macropad_core::load(&path) {
+            Ok(rec) => {
+                let (_player, abort_rx) = macropad_core::Player::new();
+                macropad_core::play(&rec, None, false, abort_rx, None).await.map_err(|e| e.to_string())
+            }
+            Err(e) => Err(e.to_string()),
+        }
+    };
 
     {
         let mut s = state.lock().unwrap();
@@ -144,7 +179,8 @@ async fn run_macro_task(path: PathBuf, state: SharedState) {
         s.set_idle();
     }
 
-    if let Err(e) = result {
-        eprintln!("[scheduler] playback error for '{}': {}", name, e);
+    match result {
+        Ok(_)  => info!("scheduled task '{}' completed successfully", name),
+        Err(e) => error!("scheduled task '{}' failed: {}", name, e),
     }
 }

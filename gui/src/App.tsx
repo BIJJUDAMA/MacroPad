@@ -3,9 +3,11 @@ import { LibraryBrowser } from './components/LibraryBrowser'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SettingsPanel } from './components/SettingsPanel'
 import { HelpPanel } from './components/HelpPanel'
-import { Database, Code2, Terminal, Settings, HelpCircle } from 'lucide-react'
+import { HotkeyManager } from './components/HotkeyManager'
+import { SchedulerPanel } from './components/SchedulerPanel'
+import { Database, Code2, Terminal, Settings, HelpCircle, Zap, Clock } from 'lucide-react'
 
-export type Tab = 'library' | 'script' | 'terminal' | 'settings' | 'help'
+export type Tab = 'library' | 'script' | 'hotkeys' | 'scheduler' | 'terminal' | 'settings' | 'help'
 
 export interface MacroLibraryState {
   paths: string[]
@@ -20,6 +22,8 @@ function App() {
   const navItems = [
     { id: 'library', icon: Database, label: 'Library' },
     { id: 'script', icon: Code2, label: 'Editor' },
+    { id: 'hotkeys', icon: Zap, label: 'Hotkeys' },
+    { id: 'scheduler', icon: Clock, label: 'Schedules' },
     { id: 'terminal', icon: Terminal, label: 'Console' },
     { id: 'settings', icon: Settings, label: 'Settings' },
     { id: 'help', icon: HelpCircle, label: 'Help' },
@@ -90,6 +94,12 @@ function App() {
           )}
           {tab === 'script' && (
             <ScriptEditor libraryPaths={paths} />
+          )}
+          {tab === 'hotkeys' && (
+            <HotkeyManager />
+          )}
+          {tab === 'scheduler' && (
+            <SchedulerPanel />
           )}
           {tab === 'terminal' && (
             <div className="flex items-center justify-center h-full text-tertiary text-sm tracking-widest font-bold uppercase py-20 flex-col gap-4">
