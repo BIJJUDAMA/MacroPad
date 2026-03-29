@@ -4,6 +4,7 @@ use std::thread;
 use std::time::{Instant};
 use thiserror::Error;
 use tokio::sync::mpsc as tokio_mpsc;
+use tracing::{error, debug};
 
 #[derive(Debug, Error)]
 pub enum RecorderError {
@@ -80,7 +81,7 @@ impl Recorder {
             };
 
             if let Err(e) = listen(callback) {
-                eprintln!("[recorder] rdev listen error: {:?}", e);
+                error!("rdev listen error: {:?}", e);
             }
         });
 

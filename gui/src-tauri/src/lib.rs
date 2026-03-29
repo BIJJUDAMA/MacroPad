@@ -61,8 +61,8 @@ async fn list_macros() -> Result<Vec<String>, String> {
 
 #[tauri::command]
 fn get_macro_info(path: String) -> Result<MacroInfo, String> {
-    if !path.ends_with(".nitsrec") {
-        return Err(format!("expected a .nitsrec file, got: {}", path));
+    if !path.ends_with(".mpr") {
+        return Err(format!("expected a .mpr file, got: {}", path));
     }
     load_macro_info(&path)
 }
@@ -119,12 +119,12 @@ fn update_app_config(
 }
 
 #[tauri::command]
-fn save_as_nitsrec(app: tauri::AppHandle) -> Result<Option<String>, String> {
+fn save_as_mpr(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
     let path = app
         .dialog()
         .file()
-        .add_filter("NitsRec files", &["nitsrec"])
+        .add_filter("MacroRecording files", &["mpr"])
         .blocking_save_file();
     Ok(path.map(|p| p.to_string()))
 }
@@ -175,13 +175,13 @@ async fn get_daemon_status() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn browse_nitsrec(app: tauri::AppHandle) -> Result<Option<String>, String> {
+fn browse_mpr(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
     let path = app
         .dialog()
         .file()
-        .add_filter("NitsRec files", &["nitsrec"])
+        .add_filter("MacroRecording files", &["mpr"])
         .blocking_pick_file();
 
     Ok(path.map(|p| p.to_string()))
@@ -215,28 +215,28 @@ fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), Strin
 }
 
 #[tauri::command]
-fn load_script(path: String) -> Result<String, String> {
-    if !path.ends_with(".nitscript") {
-        return Err(format!("expected a .nitscript file, got: {}", path));
+fn load_macro_script(path: String) -> Result<String, String> {
+    if !path.ends_with(".mps") {
+        return Err(format!("expected a .mps file, got: {}", path));
     }
     std::fs::read_to_string(&path)
         .map_err(|e| format!("failed to read {}: {}", path, e))
 }
 
 #[tauri::command]
-fn save_script(path: String, content: String) -> Result<(), String> {
+fn save_macro_script(path: String, content: String) -> Result<(), String> {
     std::fs::write(&path, content)
         .map_err(|e| format!("failed to write {}: {}", path, e))
 }
 
 #[tauri::command]
-async fn run_script_file(
+async fn run_macro_script_file(
     path: String,
     dry_run: bool,
     vars: Option<std::collections::HashMap<String, String>>,
 ) -> Result<Vec<String>, String> {
-    if !path.ends_with(".nitscript") {
-        return Err(format!("expected a .nitscript file, got: {}", path));
+    if !path.ends_with(".mps") {
+        return Err(format!("expected a .mps file, got: {}", path));
     }
 
     let p = PathBuf::from(&path);
@@ -247,26 +247,26 @@ async fn run_script_file(
 }
 
 #[tauri::command]
-fn browse_nitscript(app: tauri::AppHandle) -> Result<Option<String>, String> {
+fn browse_macro_script(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
     let path = app
         .dialog()
         .file()
-        .add_filter("NitsScript files", &["nitscript"])
+        .add_filter("MacroScript files", &["mps"])
         .blocking_pick_file();
 
     Ok(path.map(|p| p.to_string()))
 }
 
 #[tauri::command]
-fn new_nitscript(app: tauri::AppHandle) -> Result<Option<String>, String> {
+fn new_macro_script(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
 
     let path = app
         .dialog()
         .file()
-        .add_filter("NitsScript files", &["nitscript"])
+        .add_filter("MacroScript files", &["mps"])
         .blocking_save_file();
 
     Ok(path.map(|p| p.to_string()))
@@ -280,7 +280,7 @@ fn duplicate_file(path: String) -> Result<String, String> {
         .unwrap_or("macro");
     let ext  = src.extension()
         .and_then(|e| e.to_str())
-        .unwrap_or("nitsrec");
+        .unwrap_or("mpr");
     let parent = src.parent().unwrap_or(std::path::Path::new("."));
 
     let mut i = 1;
@@ -318,20 +318,20 @@ fn restore_macro_version(backup_path: String, target_path: String) -> Result<(),
 }
 
 #[tauri::command]
-fn wrap_macro_in_script(macro_path: String) -> Result<String, String> {
+fn wrap_recording_in_script(macro_path: String) -> Result<String, String> {
     let macro_p = std::path::PathBuf::from(&macro_path);
     let macro_name = macro_p.file_name()
         .and_then(|n| n.to_str())
-        .unwrap_or("macro.nitsrec");
+        .unwrap_or("macro.mpr");
     
-    let script_path = macro_p.with_extension("nitscript");
+    let script_path = macro_p.with_extension("mps");
     
     let final_script_path = if script_path.exists() {
         let parent = script_path.parent().unwrap_or(std::path::Path::new("."));
         let stem = script_path.file_stem().and_then(|s| s.to_str()).unwrap_or("script");
         let mut i = 1;
         loop {
-            let candidate = parent.join(format!("{}_{}.nitscript", stem, i));
+            let candidate = parent.join(format!("{}_{}.mps", stem, i));
             if !candidate.exists() { break candidate; }
             i += 1;
         }
@@ -352,6 +352,8 @@ fn wrap_macro_in_script(macro_path: String) -> Result<String, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    tracing_subscriber::fmt::init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
@@ -379,11 +381,11 @@ pub fn run() {
 
             std::thread::spawn(move || {
                 if daemon_bin.exists() {
-                    println!("[gui] starting daemon from {:?}", daemon_bin);
+                    tracing::info!("starting daemon from {:?}", daemon_bin);
                     let _ = std::process::Command::new(&daemon_bin).spawn();
                 } else {
                     // fallback for dev — daemon binary in PATH
-                    println!("[gui] daemon binary not found at {:?}, trying PATH", daemon_bin);
+                    tracing::info!("daemon binary not found at {:?}, trying PATH", daemon_bin);
                     let _ = std::process::Command::new("daemon").spawn();
                 }
             });
@@ -396,21 +398,21 @@ pub fn run() {
             play_macro,
             stop_playback,
             get_daemon_status,
-            browse_nitsrec,
+            browse_mpr,
             load_events,
             save_events,
-            load_script,
-            save_script,
-            run_script_file,
-            browse_nitscript,
-            new_nitscript,
+            load_macro_script,
+            save_macro_script,
+            run_macro_script_file,
+            browse_macro_script,
+            new_macro_script,
             duplicate_file,
             list_macro_history,
             restore_macro_version,
-            wrap_macro_in_script,
+            wrap_recording_in_script,
             get_app_config,
             update_app_config,
-            save_as_nitsrec,
+            save_as_mpr,
             start_record,
             stop_record,
         ])

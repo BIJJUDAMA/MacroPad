@@ -7,6 +7,7 @@ use std::thread;
 use std::time::Duration;
 use thiserror::Error;
 use tokio::sync::watch;
+use tracing::{info, debug, warn};
 
 #[derive(Debug, Error)]
 pub enum PlayerError {
@@ -113,13 +114,13 @@ pub async fn play(
                 .await
                 .map_err(|e| PlayerError::UnknownKey(format!("window wait failed: {}", e)))?;
         } else {
-            println!("[dry-run] would wait for window: {}", target_window);
+            debug!("would wait for window: {}", target_window);
         }
     }
 
     for iteration in 0..loop_count {
         if dry_run {
-            println!("[dry-run] loop iteration {}/{}", iteration + 1, loop_count);
+            debug!("loop iteration {}/{}", iteration + 1, loop_count);
         }
 
         let mut prev_time_ms = 0u64;
@@ -140,7 +141,7 @@ pub async fn play(
 
             if actual_delay > 0 {
                 if dry_run {
-                    println!("[dry-run] wait {}ms", actual_delay);
+                    debug!("wait {}ms", actual_delay);
                 } else {
                     tokio::time::sleep(Duration::from_millis(actual_delay)).await;
                 }
@@ -149,7 +150,7 @@ pub async fn play(
             prev_time_ms = event.time_ms;
 
             if dry_run {
-                println!("[dry-run] {:?}", event.event_type);
+                debug!("{:?}", event.event_type);
                 continue;
             }
 

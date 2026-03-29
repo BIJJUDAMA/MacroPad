@@ -64,7 +64,7 @@ export const HelpPanel: React.FC = () => {
                                     <div className="w-10 h-10 bg-primary/20 flex items-center justify-center border-2 border-primary">
                                         <Radio size={20} className="text-primary" />
                                     </div>
-                                    <h4 className="font-bold text-text-main uppercase tracking-widest text-xs">Macro Files (.nitsrec)</h4>
+                                    <h4 className="font-bold text-text-main uppercase tracking-widest text-xs">MacroRecordings (.mpr)</h4>
                                 </div>
                                 <p className="text-sm text-text-dim leading-relaxed">
                                     Low-level binary recordings of pixel-perfect mouse movements, hardware-level keypresses, and system events. These are the building blocks of your automation.
@@ -86,7 +86,7 @@ export const HelpPanel: React.FC = () => {
                                     <div className="w-10 h-10 bg-secondary/20 flex items-center justify-center border-2 border-secondary">
                                         <Terminal size={20} className="text-secondary" />
                                     </div>
-                                    <h4 className="font-bold text-text-main uppercase tracking-widest text-xs">NitScripts (.mps)</h4>
+                                    <h4 className="font-bold text-text-main uppercase tracking-widest text-xs">MacroScripts (.mps)</h4>
                                 </div>
                                 <p className="text-sm text-text-dim leading-relaxed">
                                     Logic-driven automation manifests. Scripts coordinate multiple macros into complex workflows using Variables, Loops, and Conditional branching.

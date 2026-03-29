@@ -88,7 +88,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
     async function handleWrapInScript() {
         setError(null)
         try {
-            const success = await tauriInvoke<boolean>("wrap_macro_in_script", { macroPath: macro.path })
+            const success = await tauriInvoke<boolean>("wrap_recording_in_script", { macroPath: macro.path })
             if (success) {
                 onRefresh()
             }
@@ -173,7 +173,7 @@ export function MacroCard({ macro, onRemove, onDuplicate, onRefresh }: Props) {
                         <button 
                             className="p-2 bg-surface hover:bg-secondary/10 text-text-dim hover:text-secondary border border-surface-lighter hover:border-secondary/30 rounded-lg transition-all"
                             onClick={handleWrapInScript}
-                            title="Wrap in NitScript"
+                            title="Wrap in MacroScript"
                         >
                             <FileCode size={18} />
                         </button>

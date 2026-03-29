@@ -4,6 +4,7 @@ use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::oneshot;
 use macropad_core::recorder::consolidate_mouse_segments;
+use tracing::{info, error, debug};
 
 #[cfg(windows)]
 use macropad_ipc::PIPE_NAME;
@@ -36,7 +37,7 @@ pub async fn start_ipc_server(state: SharedState) -> Result<(), IpcError> {
 
 #[cfg(windows)]
 async fn start_windows_pipe(state: SharedState) -> Result<(), IpcError> {
-    println!("[ipc] listening on {}", PIPE_NAME);
+    info!("listening on pipe: {}", PIPE_NAME);
 
     loop {
         let server = ServerOptions::new()
@@ -78,7 +79,7 @@ async fn start_unix_socket(state: SharedState) -> Result<(), IpcError> {
     }
 
     let listener = UnixListener::bind(SOCKET_PATH)?;
-    println!("[ipc] listening on {}", SOCKET_PATH);
+    info!("listening on socket: {}", SOCKET_PATH);
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -201,15 +202,15 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                                 }
                             } => {}
                             _ = stop_rx => {
-                                println!("[daemon] stop signal received");
+                                debug!("stop signal received");
                             }
                         }
 
-                       println!("[daemon] recording stopped, {} events captured", events.len());
+                        info!("recording stopped, {} events captured", events.len());
 
                     // consolidate raw mouse moves into segments
                     let events = consolidate_mouse_segments(&events);
-                    println!("[daemon] after consolidation: {} events", events.len());
+                    debug!("after consolidation: {} events", events.len());
                     let rec = macropad_core::models::MacropadRec {
                         meta: macropad_core::models::Metadata {
                             version: 1,
@@ -234,9 +235,9 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                     };
 
                         if let Err(e) = macropad_core::save(&rec, &output_path) {
-                            eprintln!("[daemon] save error: {}", e);
+                            error!("save error: {}", e);
                         } else {
-                            println!("[daemon] saved to {:?}", output_path);
+                            info!("saved to {:?}", output_path);
                         }
 
                         let mut s = state_clone.lock().unwrap();
@@ -244,7 +245,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
                         s.set_idle();
                     }
                     Err(e) => {
-                        eprintln!("[daemon] recorder error: {}", e);
+                        error!("recorder error: {}", e);
                         let mut s = state_clone.lock().unwrap();
                         s.set_idle();
                     }
@@ -258,7 +259,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState) -> IpcResponse {
             let mut s = state.lock().unwrap();
             if let Some(tx) = s.record_stop_tx.take() {
                 let _ = tx.send(());
-                println!("[daemon] sent stop signal to recorder");
+                debug!("sent stop signal to recorder");
             }
             s.set_idle();
             IpcResponse::Ok

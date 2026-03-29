@@ -81,9 +81,9 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
 
     async function handleOpen() {
         try {
-            const p = await tauriInvoke<string | null>("browse_nitscript")
+            const p = await tauriInvoke<string | null>("browse_macro_script")
             if (!p) return
-            const content = await tauriInvoke<string>("load_script", { path: p })
+            const content = await tauriInvoke<string>("load_macro_script", { path: p })
             setPath(p)
             setSource(content)
             setBlocks([])
@@ -95,10 +95,10 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
 
     async function handleNew() {
         try {
-            const p = await tauriInvoke<string | null>("new_nitscript")
+            const p = await tauriInvoke<string | null>("new_macro_script")
             if (!p) return
             const defaultContent = "# new script\n"
-            await tauriInvoke("save_script", { path: p, content: defaultContent })
+            await tauriInvoke("save_macro_script", { path: p, content: defaultContent })
             setPath(p)
             setSource(defaultContent)
             setBlocks([])
@@ -114,7 +114,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
         setError(null)
         try {
             const content = view === "blocks" ? blocksToSource(blocks) : source
-            await tauriInvoke("save_script", { path, content })
+            await tauriInvoke("save_macro_script", { path, content })
             if (view === "blocks") setSource(content)
             setSaved(true)
             setTimeout(() => setSaved(false), 2000)
@@ -150,7 +150,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
         }
 
         try {
-            const p = await tauriInvoke<string | null>("new_nitsrec")
+            const p = await tauriInvoke<string | null>("save_as_mpr")
             if (!p) return
             
             await tauriInvoke("start_record", { path: p })
@@ -220,7 +220,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             }
             const vars = Object.keys(varObj).length > 0 ? varObj : null
 
-            const lines = await tauriInvoke<string[]>("run_script_file", { path, dryRun, vars })
+            const lines = await tauriInvoke<string[]>("run_macro_script_file", { path, dryRun, vars })
             setLogLines(prev => [...prev, ...lines])
 
             if (!dryRun) {
@@ -281,7 +281,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
                     
                     <div className="w-px h-6 bg-surface-lighter"></div>
 
-                    <Tooltip name="New Script" description="Create a fresh automation script from scratch." align="start">
+                    <Tooltip name="New MacroScript" description="Create a fresh automation script (.mps) from scratch." align="start">
                         <button 
                             className="p-2 border border-surface-lighter hover:border-text-dim rounded-lg text-text-dim hover:text-text-main transition-colors bg-surface"
                             onClick={handleNew}
@@ -290,7 +290,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
                         </button>
                     </Tooltip>
                     
-                    <Tooltip name="Open Script" description="Load an existing .mps or .mpr file from your Library." align="start">
+                    <Tooltip name="Open Asset" description="Load an existing .mps or .mpr file from your Library." align="start">
                         <button 
                             className="p-2 border border-surface-lighter hover:border-text-dim rounded-lg text-text-dim hover:text-text-main transition-colors bg-surface"
                             onClick={handleOpen}
