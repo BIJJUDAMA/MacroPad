@@ -5,6 +5,7 @@ import { ScriptLogPanel } from "./ScriptLogPanel"
 import { ScriptView, BlockStatement } from "../types/script"
 import { Play, PlaySquare, Save, FilePlus, FolderOpen, Code2, Blocks, CircleDot, Eye } from 'lucide-react'
 import { Tooltip } from "./Tooltip"
+import { useLogs } from "../context/LogContext"
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
     const { invoke } = await import("@tauri-apps/api/core")
@@ -49,8 +50,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [running, setRunning] = useState(false)
-    const [logLines, setLogLines] = useState<string[]>([])
+    const { logLines, isExecuting: running, setExecuting: setRunning, addLog, addLogs, clearLogs } = useLogs()
     const [runtimeVars, setRuntimeVars] = useState<{key: string, value: string}[]>([])
     
     const [isRecording, setIsRecording] = useState(false)
@@ -67,7 +67,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             if (e.key === "Escape") {
                 e.preventDefault()
                 setRunning(false)
-                setLogLines(prev => [...prev, "aborted by user (Escape)"])
+                addLog("aborted by user (Escape)")
                 try {
                     await tauriInvoke("stop_playback")
                     const { getCurrentWindow } = await import("@tauri-apps/api/window")
@@ -87,7 +87,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             setPath(p)
             setSource(content)
             setBlocks([])
-            setLogLines([])
+            clearLogs()
         } catch (e) {
             setError(String(e))
         }
@@ -102,7 +102,7 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             setPath(p)
             setSource(defaultContent)
             setBlocks([])
-            setLogLines([])
+            clearLogs()
         } catch (e) {
             setError(String(e))
         }
@@ -202,7 +202,8 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
         if (!path) return
         setRunning(true)
         setError(null)
-        setLogLines([`${dryRun ? "[dry-run] " : ""}starting: ${path.split(/[\\/]/).pop()}`])
+        clearLogs()
+        addLog(`${dryRun ? "[dry-run] " : ""}starting: ${path.split(/[\\/]/).pop()}`)
 
         try {
             const { getCurrentWindow } = await import("@tauri-apps/api/window")
@@ -221,14 +222,14 @@ export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
             const vars = Object.keys(varObj).length > 0 ? varObj : null
 
             const lines = await tauriInvoke<string[]>("run_macro_script_file", { path, dryRun, vars })
-            setLogLines(prev => [...prev, ...lines])
+            addLogs(lines)
 
             if (!dryRun) {
                 await win.unminimize()
                 await win.setFocus()
             }
         } catch (e) {
-            setLogLines(prev => [...prev, `error: ${String(e)}`])
+            addLog(`error: ${String(e)}`)
             try {
                 const { getCurrentWindow } = await import("@tauri-apps/api/window")
                 await getCurrentWindow().unminimize()

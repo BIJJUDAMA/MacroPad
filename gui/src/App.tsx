@@ -5,6 +5,8 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { HelpPanel } from './components/HelpPanel'
 import { HotkeyManager } from './components/HotkeyManager'
 import { SchedulerPanel } from './components/SchedulerPanel'
+import { ScriptLogPanel } from './components/ScriptLogPanel'
+import { LogProvider, useLogs } from './context/LogContext'
 import { Database, Code2, Terminal, Settings, HelpCircle, Zap, Clock } from 'lucide-react'
 
 export type Tab = 'library' | 'script' | 'hotkeys' | 'scheduler' | 'terminal' | 'settings' | 'help'
@@ -15,9 +17,17 @@ export interface MacroLibraryState {
 }
 
 function App() {
+  return (
+    <LogProvider>
+      <AppContent />
+    </LogProvider>
+  )
+}
+
+function AppContent() {
   const [tab, setTab] = useState<Tab>('library')
   const [paths, setPaths] = useState<string[]>([])
-  // Removed GSAP animations for instantaneous switching and to fix the flash.
+  const { logLines, isExecuting } = useLogs()
 
   const navItems = [
     { id: 'library', icon: Database, label: 'Library' },
@@ -70,13 +80,8 @@ function App() {
           })}
         </div>
 
-        {/* Bottom Profile/Settings dummy for aesthetic weight */}
-        <div className="mt-auto w-full pt-6 border-t border-surface-lighter/50 opacity-40 hover:opacity-100 transition-opacity">
-          <button className="flex items-center gap-4 px-4 py-3 text-text-dim">
-            <Settings size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">SYSTEM</span>
-          </button>
-        </div>
+        {/* Space filler where System button was */}
+        <div className="mt-auto w-full pt-6"></div>
       </nav>
 
       {/* Main Content Area */}
@@ -102,10 +107,7 @@ function App() {
             <SchedulerPanel />
           )}
           {tab === 'terminal' && (
-            <div className="flex items-center justify-center h-full text-tertiary text-sm tracking-widest font-bold uppercase py-20 flex-col gap-4">
-              <span className="w-12 h-1 bg-surface-lighter rounded-full"></span>
-              Console module standby
-            </div>
+            <ScriptLogPanel lines={logLines} running={isExecuting} />
           )}
           {tab === 'settings' && (
             <SettingsPanel />
