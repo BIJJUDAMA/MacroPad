@@ -64,8 +64,9 @@ pub struct PlaybackOverrides {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "cmd", rename_all = "snake_case")]
+#[serde(tag = "cmd")]
 pub enum IpcCommand {
+    #[serde(rename = "play", alias = "PLAY")]
     Play {
         path:      PathBuf,
         speed:     Option<f64>,
@@ -77,26 +78,37 @@ pub enum IpcCommand {
         #[serde(default)]
         overrides: Option<PlaybackOverrides>,
     },
+    #[serde(rename = "record", alias = "RECORD")]
     Record {
         output_path: PathBuf,
         options:     Option<RecordingOptions>,
     },
+    #[serde(rename = "stop_record", alias = "STOP_RECORD")]
     StopRecord,
+    #[serde(rename = "stop_playback", alias = "STOP_PLAYBACK")]
     StopPlayback,
+    #[serde(rename = "status", alias = "STATUS")]
     Status,
+    #[serde(rename = "list_macros", alias = "LIST_MACROS")]
     ListMacros,
+    #[serde(rename = "ping", alias = "PING")]
     Ping,
+    #[serde(rename = "set_hotkey", alias = "SET_HOTKEY")]
     SetHotkey {
         macro_path:  PathBuf,
         hotkey_str:  String,
     },
+    #[serde(rename = "get_hotkeys", alias = "GET_HOTKEYS")]
     GetHotkeys,
+    #[serde(rename = "add_scheduled_task", alias = "ADD_SCHEDULED_TASK")]
     AddScheduledTask {
         task: ScheduledTask,
     },
+    #[serde(rename = "remove_scheduled_task", alias = "REMOVE_SCHEDULED_TASK")]
     RemoveScheduledTask {
         id: String,
     },
+    #[serde(rename = "get_scheduled_tasks", alias = "GET_SCHEDULED_TASKS")]
     GetScheduledTasks,
 }
 

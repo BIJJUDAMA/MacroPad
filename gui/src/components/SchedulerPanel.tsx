@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { invoke } from '@tauri-apps/api/core'
+import { tauriInvoke } from '../lib/tauri'
 import { Clock, Trash2, Calendar, Repeat, Timer, Check } from 'lucide-react'
 
 interface ScheduledTask {
@@ -35,7 +35,7 @@ export function SchedulerPanel() {
 
   const fetchTasks = async () => {
     try {
-      const data: ScheduledTask[] = await invoke('get_scheduled_tasks')
+      const data: ScheduledTask[] = await tauriInvoke('get_scheduled_tasks')
       setTasks(data)
     } catch (err) {
       console.error(err)
@@ -59,7 +59,7 @@ export function SchedulerPanel() {
     }
 
     try {
-      await invoke('add_scheduled_task', { task })
+      await tauriInvoke('add_scheduled_task', { task })
       setNewTask({ ...newTask, name: '', path: '' })
       fetchTasks()
     } catch (err) {
@@ -69,7 +69,7 @@ export function SchedulerPanel() {
 
   const removeTask = async (id: string) => {
     try {
-      await invoke('remove_scheduled_task', { id })
+      await tauriInvoke('remove_scheduled_task', { id })
       fetchTasks()
     } catch (err) {
       console.error(err)

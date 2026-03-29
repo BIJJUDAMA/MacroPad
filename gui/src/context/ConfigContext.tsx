@@ -46,6 +46,20 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             });
             // Add CURRENT theme
             document.documentElement.classList.add(`theme-${config.ui_theme}`);
+
+            // Update App Icons
+            const isDark = config.ui_theme === 'dark';
+            const iconPath = isDark ? '/Logo_Dark.png' : '/Logo_Light.png';
+            
+            // 1. Update Favicon
+            const favicon = document.getElementById('app-favicon') as HTMLLinkElement;
+            if (favicon) {
+                favicon.href = iconPath;
+            }
+
+            // 2. Update Tauri Window Icon (Taskbar) - DELEGATE TO RUST
+            invoke("set_theme_icon", { theme: config.ui_theme })
+                .catch(e => console.error("Failed to update taskbar icon:", e));
         }
     }, [config?.ui_theme]);
 

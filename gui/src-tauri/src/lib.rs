@@ -215,6 +215,54 @@ fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), Strin
 }
 
 #[tauri::command]
+fn set_theme_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
+    // Try "main", then try the first available window
+    let window = app.get_webview_window("main")
+        .or_else(|| app.webview_windows().values().next().cloned())
+        .ok_or("could not find any window to set icon")?;
+    
+    tracing::info!("Setting {} theme icon", theme);
+    // However, since we moved them to gui/public, they are part of the frontend build.
+    // To be same for both, we can use the app's resource directory if they are bundled.
+    // For now, let's try reading them from the relative public folder during dev.
+    
+    let icon_name = if theme == "dark" { "Logo_Dark.png" } else { "Logo_Light.png" };
+    
+    // Try multiple paths to find the icon (dev vs prod)
+    let resource_path = app.path().resource_dir().unwrap_or_default().join(icon_name);
+    // Relative to src-tauri during dev
+    let dev_path = std::path::Path::new("..").join("public").join(icon_name);
+    
+    tracing::info!("Trying icon paths: {:?}, {:?}", resource_path, dev_path);
+    
+    let bytes = std::fs::read(&resource_path)
+        .or_else(|_| std::fs::read(&dev_path))
+        .or_else(|_| {
+            let exe_path = std::env::current_exe().unwrap_or_default();
+            let base = exe_path.parent().unwrap_or(std::path::Path::new("."));
+            std::fs::read(base.join(icon_name))
+        })
+        .map_err(|e| format!("failed to read icon {}: {}", icon_name, e))?;
+
+    // RESIZE: The 2.7MB icons are likely too large for Windows taskbar.
+    // We downscale to a standard 256x256 PNG buffer.
+    let img = image::load_from_memory(&bytes)
+        .map_err(|e| format!("failed to load image {}: {}", icon_name, e))?;
+    
+    let resized = img.resize(256, 256, image::imageops::FilterType::Lanczos3);
+    let rgba = resized.to_rgba8();
+    let (width, height) = rgba.dimensions();
+    let pixels = rgba.into_raw();
+
+    let icon = tauri::image::Image::new_owned(pixels, width, height);
+
+    window.set_icon(icon)
+        .map_err(|e| format!("failed to set window icon: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 fn load_macro_script(path: String) -> Result<String, String> {
     if !path.ends_with(".mps") {
         return Err(format!("expected a .mps file, got: {}", path));
@@ -429,11 +477,21 @@ pub fn run() {
             let daemon_bin = exe_dir.join("daemon");
 
             std::thread::spawn(move || {
+                #[cfg(windows)]
+                {
+                    // Kill existing daemon if any to avoid zombies. 
+                    // Use .spawn().ok() to be truly silent and non-blocking.
+                    let _ = std::process::Command::new("taskkill")
+                        .args(["/F", "/IM", "daemon.exe", "/T"])
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .status();
+                }
+
                 if daemon_bin.exists() {
                     tracing::info!("starting daemon from {:?}", daemon_bin);
                     let _ = std::process::Command::new(&daemon_bin).spawn();
                 } else {
-                    // fallback for dev — daemon binary in PATH
                     tracing::info!("daemon binary not found at {:?}, trying PATH", daemon_bin);
                     let _ = std::process::Command::new("daemon").spawn();
                 }
@@ -469,6 +527,7 @@ pub fn run() {
             add_scheduled_task,
             remove_scheduled_task,
             get_scheduled_tasks,
+            set_theme_icon,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

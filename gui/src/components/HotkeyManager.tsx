@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { invoke } from '@tauri-apps/api/core'
+import { tauriInvoke } from '../lib/tauri'
 import { Zap, Trash2, Keyboard, Play, FileCode, Check, AlertCircle } from 'lucide-react'
 
 interface HotkeyBinding {
@@ -19,7 +19,7 @@ export function HotkeyManager() {
 
   const fetchBindings = async () => {
     try {
-      const data: Record<string, string> = await invoke('get_hotkeys')
+      const data: Record<string, string> = await tauriInvoke('get_hotkeys')
       const formatted = Object.entries(data).map(([hotkey, path]) => ({ hotkey, path }))
       setBindings(formatted)
       setError(null)
@@ -33,7 +33,7 @@ export function HotkeyManager() {
   const handleAddBinding = async () => {
     if (!newBinding.hotkey || !newBinding.path) return
     try {
-      await invoke('set_hotkey', { 
+      await tauriInvoke('set_hotkey', { 
         macroPath: newBinding.path, 
         hotkeyStr: newBinding.hotkey 
       })

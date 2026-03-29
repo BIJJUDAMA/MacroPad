@@ -7,6 +7,7 @@ import { HotkeyManager } from './components/HotkeyManager'
 import { SchedulerPanel } from './components/SchedulerPanel'
 import { ScriptLogPanel } from './components/ScriptLogPanel'
 import { LogProvider, useLogs } from './context/LogContext'
+import { useConfig } from './context/ConfigContext'
 import { Database, Code2, Terminal, Settings, HelpCircle, Zap, Clock } from 'lucide-react'
 
 export type Tab = 'library' | 'script' | 'hotkeys' | 'scheduler' | 'terminal' | 'settings' | 'help'
@@ -28,6 +29,10 @@ function AppContent() {
   const [tab, setTab] = useState<Tab>('library')
   const [paths, setPaths] = useState<string[]>([])
   const { logLines, isExecuting } = useLogs()
+  const { config } = useConfig()
+
+  const isDark = config?.ui_theme === 'dark'
+  const logoSrc = isDark ? '/Logo_Dark.png' : '/Logo_Light.png'
 
   const navItems = [
     { id: 'library', icon: Database, label: 'Library' },
@@ -44,9 +49,13 @@ function AppContent() {
 
       {/* Sidebar Navigation */}
       <nav className="w-52 bg-surface border-r border-surface-lighter flex flex-col items-start py-6 px-4 gap-2 relative z-10 shadow-2xl">
-        <div className="flex items-center gap-3 text-primary mb-10 px-2">
-          <Terminal size={28} strokeWidth={2.5} />
-          <span className="font-bold tracking-tighter text-xl uppercase">MACROPAD</span>
+        <div className="flex items-center gap-2 mb-10 px-1 overflow-hidden">
+          <img 
+            src={logoSrc} 
+            alt="Macropad Logo" 
+            className="w-10 h-10 object-contain drop-shadow-sm transition-opacity duration-300" 
+          />
+          <span className="font-bold tracking-tighter text-xl uppercase truncate">MACROPAD</span>
         </div>
 
         <div className="w-full space-y-2">

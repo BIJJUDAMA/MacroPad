@@ -1,10 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { DaemonStatus, MacroInfo } from "../types/macro"
 
-async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-    const { invoke } = await import("@tauri-apps/api/core")
-    return invoke<T>(cmd, args)
-}
+import { tauriInvoke } from "../lib/tauri"
 
 export function useDaemonStatus() {
     const [status, setStatus] = useState<DaemonStatus>("offline")

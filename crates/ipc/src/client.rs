@@ -42,6 +42,7 @@ impl IpcClient {
 
     pub async fn send(&mut self, cmd: IpcCommand) -> Result<IpcResponse, ClientError> {
         let mut json = serde_json::to_string(&cmd)?;
+        println!("GUI SENDING IPC: {}", json);
         json.push('\n');
 
         #[cfg(windows)]
