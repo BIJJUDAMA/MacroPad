@@ -504,6 +504,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let config_dir = app.path().app_config_dir().unwrap_or_else(|_| PathBuf::from("."));
             let config_path = config_dir.join("settings.toml");
@@ -514,26 +515,13 @@ pub fn run() {
                 path: config_path,
             });
 
-            let daemon_dir = app
-                .path()
-                .resource_dir()
-                .unwrap_or_else(|_| {
-                    std::env::current_exe()
-                        .ok()
-                        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-                        .unwrap_or_default()
-                });
+            use tauri_plugin_shell::ShellExt;
 
-            #[cfg(windows)]
-            let daemon_bin = daemon_dir.join("daemon.exe");
-            #[cfg(not(windows))]
-            let daemon_bin = daemon_dir.join("daemon");
-
+            let app_handle = app.handle().clone();
             std::thread::spawn(move || {
                 #[cfg(windows)]
                 {
-                    // Kill existing daemon if any to avoid zombies. 
-                    // Use .spawn().ok() to be truly silent and non-blocking.
+                    // Kill existing daemon if any to avoid zombies.
                     let _ = std::process::Command::new("taskkill")
                         .args(["/F", "/IM", "daemon.exe", "/T"])
                         .stdout(std::process::Stdio::null())
@@ -541,16 +529,11 @@ pub fn run() {
                         .status();
                 }
 
-                if daemon_bin.exists() {
-                    tracing::info!("GUI Backend: starting daemon sidecar from {:?}", daemon_bin);
-                    match std::process::Command::new(&daemon_bin).spawn() {
-                        Ok(_) => tracing::info!("GUI Backend: Daemon process spawned successfully."),
-                        Err(e) => tracing::error!("GUI Backend: Failed to spawn daemon process: {}", e),
-                    }
-                } else {
-                    tracing::warn!("GUI Backend: Daemon binary not found at {:?}. Check bundle/resources configuration.", daemon_bin);
-                    // Fallback to PATH for dev environment if needed
-                    let _ = std::process::Command::new("daemon").spawn();
+                tracing::info!("GUI Backend: starting daemon sidecar using Tauri Sidecar API");
+                let sidecar = app_handle.shell().sidecar("daemon").unwrap();
+                match sidecar.spawn() {
+                    Ok((mut _rx, _child)) => tracing::info!("GUI Backend: Sidecar spawned successfully."),
+                    Err(e) => tracing::error!("GUI Backend: Failed to spawn sidecar: {}", e),
                 }
             });
 

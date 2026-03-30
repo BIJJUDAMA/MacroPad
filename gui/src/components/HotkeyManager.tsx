@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { tauriInvoke } from '../lib/tauri'
-import { Zap, Trash2, Keyboard, Play, FileCode, Check, AlertCircle } from 'lucide-react'
+import { Zap, Trash2, Keyboard, Play, FileCode, AlertCircle } from 'lucide-react'
 
 interface HotkeyBinding {
   hotkey: string
@@ -160,10 +160,7 @@ export function HotkeyManager() {
           )}
       </div>
 
-      <footer className="pt-10 border-t border-surface-lighter text-[10px] font-bold text-text-dim/40 uppercase tracking-[0.2em] flex items-center gap-4">
-        <Check size={14} className="text-primary" />
-        Verified Background Agent Online
-      </footer>
+      {/* Real status footer could go here in the future if needed */}
     </div>
   )
 }

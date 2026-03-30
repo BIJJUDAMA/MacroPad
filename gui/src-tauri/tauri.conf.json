@@ -52,9 +52,11 @@
       }
     ],
     "resources": [
-      "../../target/release/daemon*",
       "icons/MPR_Icon.ico",
       "icons/MPS_Icon.ico"
+    ],
+    "externalBin": [
+      "daemon"
     ]
   }
 }
