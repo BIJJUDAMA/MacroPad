@@ -190,6 +190,7 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState, scheduler: &Arc<Sc
 
             info!("Daemon: IpcCommand::Record received for path: {:?}", output_path);
             match macropad_core::Recorder::start() {
+                Ok(mut recorder) => {
                     let (stop_tx, stop_rx) = oneshot::channel();
                     let (done_tx, done_rx) = oneshot::channel();
                     s.record_stop_tx = Some(stop_tx);
