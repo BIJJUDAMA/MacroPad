@@ -2,7 +2,7 @@ use macropad_core::models::MacropadRec;
 use platform::hotkey::{Hotkey, HotkeyManager};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 use tracing::{info, warn, debug};
@@ -14,14 +14,6 @@ pub enum PlaybackStatus {
     Recording,
 }
 
-#[derive(Debug)]
-pub struct MacroEntry {
-    pub name:   String,
-    pub path:   PathBuf,
-    pub rec:    MacropadRec,
-    pub hotkey: Option<Hotkey>,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HotkeyStore {
     // hotkey_str -> macro_path
@@ -29,12 +21,10 @@ pub struct HotkeyStore {
 }
 
 pub struct AppState {
-    pub macros:         HashMap<String, MacroEntry>,
     pub hotkeys:        HotkeyManager,
     pub hotkeys_path:   PathBuf,
     pub status:         PlaybackStatus,
     pub last_result:    Option<bool>,
-    pub loop_cap:       u32,
     pub record_stop_tx: Option<oneshot::Sender<()>>,
     pub record_done_rx: Option<oneshot::Receiver<()>>,
 }
@@ -42,12 +32,10 @@ pub struct AppState {
 impl AppState {
     pub fn new(hotkeys_path: PathBuf) -> Self {
         let mut s = Self {
-            macros:         HashMap::new(),
             hotkeys:        HotkeyManager::new(),
             hotkeys_path,
             status:         PlaybackStatus::Idle,
             last_result:    None,
-            loop_cap:       1000,
             record_stop_tx: None,
             record_done_rx: None,
         };
@@ -104,18 +92,6 @@ impl AppState {
 
     pub fn set_recording(&mut self) {
         self.status = PlaybackStatus::Recording;
-    }
-
-    pub fn register_macro(&mut self, entry: MacroEntry) {
-        self.macros.insert(entry.name.clone(), entry);
-    }
-
-    pub fn remove_macro(&mut self, name: &str) -> bool {
-        self.macros.remove(name).is_some()
-    }
-
-    pub fn get_macro(&self, name: &str) -> Option<&MacroEntry> {
-        self.macros.get(name)
     }
 }
 

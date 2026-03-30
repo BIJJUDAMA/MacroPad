@@ -1,6 +1,6 @@
 use crate::state::SharedState;
 use crate::scheduler::Scheduler;
-use macropad_ipc::{IpcCommand, IpcResponse, ScheduledTask};
+use macropad_ipc::{IpcCommand, IpcResponse};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};

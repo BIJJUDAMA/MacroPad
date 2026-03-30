@@ -494,18 +494,20 @@ pub fn run() {
                 path: config_path,
             });
 
-            let exe_dir = app
+            let daemon_dir = app
                 .path()
                 .resource_dir()
-                .ok()
-                .and_then(|_| std::env::current_exe().ok())
-                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-                .unwrap_or_default();
+                .unwrap_or_else(|_| {
+                    std::env::current_exe()
+                        .ok()
+                        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                        .unwrap_or_default()
+                });
 
             #[cfg(windows)]
-            let daemon_bin = exe_dir.join("daemon.exe");
+            let daemon_bin = daemon_dir.join("daemon.exe");
             #[cfg(not(windows))]
-            let daemon_bin = exe_dir.join("daemon");
+            let daemon_bin = daemon_dir.join("daemon");
 
             std::thread::spawn(move || {
                 #[cfg(windows)]
