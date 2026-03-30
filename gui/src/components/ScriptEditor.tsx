@@ -39,14 +39,32 @@ function blocksToSource(blocks: BlockStatement[]): string {
 }
 
 interface ScriptEditorProps {
-    libraryPaths: string[]
+    initialPath?: string | null
 }
 
-export function ScriptEditor({ libraryPaths: _ }: ScriptEditorProps) {
-    const [path, setPath] = useState<string | null>(null)
+export function ScriptEditor({ initialPath }: ScriptEditorProps) {
+    const [path, setPath] = useState<string | null>(initialPath || null)
     const [source, setSource] = useState("# write your .mps here\n")
     const [blocks, setBlocks] = useState<BlockStatement[]>([])
     const [view, setView] = useState<ScriptView>("code")
+
+    useEffect(() => {
+        if (initialPath) {
+            setPath(initialPath)
+            loadScript(initialPath)
+        }
+    }, [initialPath])
+
+    async function loadScript(p: string) {
+        try {
+            const content = await tauriInvoke<string>("load_macro_script", { path: p })
+            setSource(content)
+            setBlocks([])
+            clearLogs()
+        } catch (e) {
+            setError(String(e))
+        }
+    }
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState<string | null>(null)

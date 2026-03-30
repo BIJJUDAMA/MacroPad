@@ -38,7 +38,7 @@ export function useMacroList(
     }, [paths])
 
     const loadInfosForPaths = useCallback(async (pathList: string[]) => {
-        if (pathList.length === 0) {
+        if (!pathList || pathList.length === 0) {
             setMacros([])
             return
         }

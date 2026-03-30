@@ -27,6 +27,7 @@ pub struct AppState {
     pub last_result:    Option<bool>,
     pub record_stop_tx: Option<oneshot::Sender<()>>,
     pub record_done_rx: Option<oneshot::Receiver<()>>,
+    pub macros:         HashMap<String, MacropadRec>,
 }
 
 impl AppState {
@@ -38,6 +39,7 @@ impl AppState {
             last_result:    None,
             record_stop_tx: None,
             record_done_rx: None,
+            macros:         HashMap::new(),
         };
         if let Err(e) = s.load_hotkeys() {
             warn!("failed to load hotkeys: {}", e);

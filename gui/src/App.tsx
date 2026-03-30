@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { LibraryBrowser } from './components/LibraryBrowser'
-import { ScriptEditor } from './components/ScriptEditor'
+import { RecorderSection } from './components/RecorderSection'
+import { ScriptingSection } from './components/ScriptingSection'
 import { SettingsPanel } from './components/SettingsPanel'
 import { HelpPanel } from './components/HelpPanel'
 import { HotkeyManager } from './components/HotkeyManager'
@@ -10,12 +10,7 @@ import { LogProvider, useLogs } from './context/LogContext'
 import { useConfig } from './context/ConfigContext'
 import { Database, Code2, Terminal, Settings, HelpCircle, Zap, Clock } from 'lucide-react'
 
-export type Tab = 'library' | 'script' | 'hotkeys' | 'scheduler' | 'terminal' | 'settings' | 'help'
-
-export interface MacroLibraryState {
-  paths: string[]
-  setPaths: (paths: string[]) => void
-}
+export type Tab = 'recorder' | 'scripting' | 'hotkeys' | 'scheduler' | 'terminal' | 'settings' | 'help'
 
 function App() {
   return (
@@ -26,23 +21,32 @@ function App() {
 }
 
 function AppContent() {
-  const [tab, setTab] = useState<Tab>('library')
-  const [paths, setPaths] = useState<string[]>([])
+  const [tab, setTab] = useState<Tab>('recorder')
   const { logLines, isExecuting } = useLogs()
-  const { config } = useConfig()
+  const { config, updateConfig } = useConfig()
 
   const isDark = config?.ui_theme === 'dark'
   const logoSrc = isDark ? '/Logo_Dark.png' : '/Logo_Light.png'
 
   const navItems = [
-    { id: 'library', icon: Database, label: 'Library' },
-    { id: 'script', icon: Code2, label: 'Editor' },
+    { id: 'recorder', icon: Database, label: 'Recorder' },
+    { id: 'scripting', icon: Code2, label: 'Scripting' },
     { id: 'hotkeys', icon: Zap, label: 'Hotkeys' },
     { id: 'scheduler', icon: Clock, label: 'Schedules' },
     { id: 'terminal', icon: Terminal, label: 'Console' },
     { id: 'settings', icon: Settings, label: 'Settings' },
     { id: 'help', icon: HelpCircle, label: 'Help' },
   ] as const
+
+  const setMprPaths = (newPaths: string[]) => {
+    if (!config) return;
+    updateConfig({ ...config, mpr_paths: newPaths });
+  };
+
+  const setMpsPaths = (newPaths: string[]) => {
+    if (!config) return;
+    updateConfig({ ...config, mps_paths: newPaths });
+  };
 
   return (
     <div className="flex h-screen bg-neutral text-text-main font-sans overflow-hidden select-none">
@@ -103,11 +107,11 @@ function AppContent() {
         </header>
 
         <div className="flex-1 overflow-x-hidden overflow-y-auto">
-          {tab === 'library' && (
-            <LibraryBrowser paths={paths} setPaths={setPaths} />
+          {tab === 'recorder' && config && (
+            <RecorderSection paths={config.mpr_paths || []} setPaths={setMprPaths} />
           )}
-          {tab === 'script' && (
-            <ScriptEditor libraryPaths={paths} />
+          {tab === 'scripting' && config && (
+            <ScriptingSection paths={config.mps_paths || []} setPaths={setMpsPaths} />
           )}
           {tab === 'hotkeys' && (
             <HotkeyManager />

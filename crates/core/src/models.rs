@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
 use std::collections::HashMap;
+use std::path::PathBuf;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MacropadRec {
@@ -131,6 +133,10 @@ pub struct AppConfig {
     pub recording_defaults: RecordingOptions,
     #[serde(default = "default_theme")]
     pub ui_theme: String,
+    #[serde(default)]
+    pub mpr_paths: Vec<PathBuf>,
+    #[serde(default)]
+    pub mps_paths: Vec<PathBuf>,
 }
 
 fn default_theme() -> String {
@@ -143,6 +149,8 @@ impl Default for AppConfig {
             playback_defaults: PlaybackConfig::default(),
             recording_defaults: RecordingOptions::default(),
             ui_theme: default_theme(),
+            mpr_paths: Vec::new(),
+            mps_paths: Vec::new(),
         }
     }
 }

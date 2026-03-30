@@ -16,4 +16,6 @@ export interface AppConfig {
     playback_defaults: PlaybackConfig;
     recording_defaults: RecordingOptions;
     ui_theme: string;
+    mpr_paths: string[];
+    mps_paths: string[];
 }
