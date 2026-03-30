@@ -67,7 +67,16 @@ export function useMacroList(
     }, [loadInfosForPaths])
 
     const addMacro = useCallback(async (path: string) => {
-        if (pathsRef.current.includes(path)) return
+
+        const normalized = path.replace(/\\/g, '/').toLowerCase()
+        const exists = pathsRef.current.some(p => p.replace(/\\/g, '/').toLowerCase() === normalized)
+
+        if (exists) {
+            console.log("AddMacro: Path already in library:", path)
+            return
+        }
+
+        console.log("AddMacro: Adding new path to library:", path)
         const next = [...pathsRef.current, path]
         setPaths(next)
     }, [setPaths])

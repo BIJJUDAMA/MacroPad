@@ -49,7 +49,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             // Update App Icons
             const isDark = config.ui_theme === 'dark';
-            const iconPath = isDark ? '/Logo_Dark.png' : '/Logo_Light.png';
+            const iconPath = isDark ? '/Logo_Dark.ico' : '/Logo_Light.ico';
             
             // 1. Update Favicon
             const favicon = document.getElementById('app-favicon') as HTMLLinkElement;

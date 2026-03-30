@@ -34,7 +34,27 @@ async fn send_ipc(cmd: IpcCommand) -> Result<IpcResponse, String> {
 }
 
 fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
-    let p   = PathBuf::from(path);
+    let p = PathBuf::from(path);
+    let extension = p.extension().and_then(|e| e.to_str()).unwrap_or("");
+
+    if extension == "mps" {
+        let name = p.file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("script")
+            .to_string();
+            
+        return Ok(MacroInfo {
+            name,
+            path:        path.to_string(),
+            tags:        vec![],
+            created:     "unknown".to_string(),
+            event_count: 0,
+            speed:       1.0,
+            loop_count:  1,
+            requires:    vec![],
+        });
+    }
+
     let rec = macropad_core::load(&p)
         .map_err(|e| format!("failed to load {}: {}", path, e))?;
 
@@ -61,8 +81,8 @@ async fn list_macros() -> Result<Vec<String>, String> {
 
 #[tauri::command]
 fn get_macro_info(path: String) -> Result<MacroInfo, String> {
-    if !path.ends_with(".mpr") {
-        return Err(format!("expected a .mpr file, got: {}", path));
+    if !path.ends_with(".mpr") && !path.ends_with(".mps") {
+        return Err(format!("expected a .mpr or .mps file, got: {}", path));
     }
     load_macro_info(&path)
 }
@@ -522,10 +542,14 @@ pub fn run() {
                 }
 
                 if daemon_bin.exists() {
-                    tracing::info!("starting daemon from {:?}", daemon_bin);
-                    let _ = std::process::Command::new(&daemon_bin).spawn();
+                    tracing::info!("GUI Backend: starting daemon sidecar from {:?}", daemon_bin);
+                    match std::process::Command::new(&daemon_bin).spawn() {
+                        Ok(_) => tracing::info!("GUI Backend: Daemon process spawned successfully."),
+                        Err(e) => tracing::error!("GUI Backend: Failed to spawn daemon process: {}", e),
+                    }
                 } else {
-                    tracing::info!("daemon binary not found at {:?}, trying PATH", daemon_bin);
+                    tracing::warn!("GUI Backend: Daemon binary not found at {:?}. Check bundle/resources configuration.", daemon_bin);
+                    // Fallback to PATH for dev environment if needed
                     let _ = std::process::Command::new("daemon").spawn();
                 }
             });
