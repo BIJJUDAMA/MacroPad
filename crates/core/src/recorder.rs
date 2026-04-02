@@ -33,18 +33,19 @@ impl Recorder {
             let mut last_move_t = 0u64;
             let mut count       = 0u64;
 
+            println!(">>DEBUG: macropad_core: Low-level capture thread started. Hooking OS events.");
             tracing::info!("macropad_core: Low-level capture thread started.");
 
             let callback = {
                 let event_tx = event_tx.clone();
                 move |rdev_event: rdev::Event| {
                     count += 1;
-                    if count % 100 == 0 {
-                        tracing::debug!("macropad_core: Captured {} events so far...", count);
-                    }
                     let time_ms = start.elapsed().as_millis() as u64;
 
                     match &rdev_event.event_type {
+                        RdevEventType::KeyPress(key) => {
+                            println!(">>DEBUG: macropad_core: Captured KeyPress: {:?}", key);
+                        }
                         RdevEventType::MouseMove { x, y } => {
                             if !opts.record_mouse_move {
                                 return;
@@ -88,8 +89,10 @@ impl Recorder {
             };
 
             if let Err(e) = listen(callback) {
+                println!(">>DEBUG: macropad_core: OS Hook - listen error: {:?}", e);
                 error!("macropad_core: OS Hook - listen error: {:?}", e);
             }
+            println!(">>DEBUG: macropad_core: Capture thread exiting.");
             tracing::info!("macropad_core: Capture thread exiting.");
         });
 
@@ -170,7 +173,7 @@ pub fn consolidate_mouse_segments(events: &[Event]) -> Vec<Event> {
     result
 }
 
-fn convert_event(e: rdev::Event, time_ms: u64) -> Option<Event> {
+pub fn convert_event(e: rdev::Event, time_ms: u64) -> Option<Event> {
     match e.event_type {
         RdevEventType::KeyPress(key) => Some(Event {
             event_type:  EventType::KeyDown,
@@ -255,10 +258,11 @@ fn convert_event(e: rdev::Event, time_ms: u64) -> Option<Event> {
             value:       None,
             waypoints:   None,
         }),
+        _ => None,
     }
 }
 
-fn convert_button(btn: rdev::Button) -> MouseButton {
+pub fn convert_button(btn: rdev::Button) -> MouseButton {
     match btn {
         rdev::Button::Left   => MouseButton::Left,
         rdev::Button::Right  => MouseButton::Right,
@@ -267,7 +271,7 @@ fn convert_button(btn: rdev::Button) -> MouseButton {
     }
 }
 
-fn key_to_string(key: Key) -> String {
+pub fn key_to_string(key: Key) -> String {
     match key {
         Key::Alt          => "alt".into(),
         Key::AltGr        => "altgr".into(),
