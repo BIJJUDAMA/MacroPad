@@ -90,7 +90,10 @@ pub enum IpcCommand {
     #[serde(rename = "status", alias = "STATUS")]
     Status,
     #[serde(rename = "list_macros", alias = "LIST_MACROS")]
-    ListMacros,
+    ListMacros { 
+        mpr_paths: Vec<PathBuf>,
+        mps_paths: Vec<PathBuf>,
+    },
     #[serde(rename = "ping", alias = "PING")]
     Ping,
     #[serde(rename = "set_hotkey", alias = "SET_HOTKEY")]
@@ -112,6 +115,12 @@ pub enum IpcCommand {
     GetScheduledTasks,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MacroItem {
+    pub path: PathBuf,
+    pub meta: macropad_core::models::Metadata,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum IpcResponse {
@@ -119,7 +128,7 @@ pub enum IpcResponse {
     Pong,
     Error  { message: String },
     Status { status: String, last_result: Option<bool> },
-    Macros { names: Vec<String> },
+    Macros { items: Vec<MacroItem> },
     Hotkeys { bindings: HashMap<String, String> },
     ScheduledTasks { tasks: Vec<ScheduledTask> },
 }
