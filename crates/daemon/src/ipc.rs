@@ -124,10 +124,16 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState, scheduler: &Arc<Sc
             }
         }
 
-        IpcCommand::ListMacros => {
-            let s     = state.lock().unwrap();
-            let names = s.macros.keys().cloned().collect();
-            IpcResponse::Macros { names }
+        IpcCommand::ListMacros { mpr_paths, mps_paths } => {
+            let mut s = state.lock().unwrap();
+            s.refresh_macros(&mpr_paths, &mps_paths);
+            let items = s.macros.iter()
+                .map(|(path, meta)| macropad_ipc::MacroItem { 
+                    path: std::path::PathBuf::from(path), 
+                    meta: meta.clone() 
+                })
+                .collect();
+            IpcResponse::Macros { items }
         }
 
         IpcCommand::Play { path, speed, dry_run, vars, overrides } => {
@@ -184,87 +190,120 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState, scheduler: &Arc<Sc
         }
 
         IpcCommand::Record { output_path, .. } => {
-            let mut s = state.lock().unwrap();
-            if s.is_busy() { return IpcResponse::Error { message: "daemon is busy".into() }; }
-            s.set_recording();
+            let mut rx = {
+                let s = state.lock().unwrap();
+                if s.is_busy() { return IpcResponse::Error { message: "daemon is busy".into() }; }
+                s.event_bus.subscribe()
+            };
+            {
+                let mut s = state.lock().unwrap();
+                s.set_recording();
+            }
 
             info!("Daemon: IpcCommand::Record received for path: {:?}", output_path);
-            match macropad_core::Recorder::start() {
-                Ok(mut recorder) => {
-                    let (stop_tx, stop_rx) = oneshot::channel();
-                    let (done_tx, done_rx) = oneshot::channel();
-                    s.record_stop_tx = Some(stop_tx);
-                    s.record_done_rx = Some(done_rx);
-                    
-                    let state_clone = state.clone();
-                    let output_path = output_path.clone();
+            
+            let (stop_tx, stop_rx) = oneshot::channel();
+            let (done_tx, done_rx) = oneshot::channel();
+            {
+                let mut s = state.lock().unwrap();
+                s.record_stop_tx = Some(stop_tx);
+                s.record_done_rx = Some(done_rx);
+            }
+            
+            let state_clone = state.clone();
+            let output_path = output_path.clone();
 
-                    tokio::spawn(async move {
-                        info!("Daemon: Capture task spawned for {:?}", output_path);
-                        let mut events_arr = Vec::new();
-                        let mut stop_rx = stop_rx;
-                        loop {
-                            tokio::select! {
-                                res = recorder.rx.recv() => {
-                                    match res {
-                                        Some(e) => { events_arr.push(e); }
-                                        None => {
-                                            warn!("Daemon: Capture channel closed unexpectedly (hook thread died).");
-                                            break;
-                                        }
+            tokio::spawn(async move {
+                info!("Daemon: Capture task spawned for {:?}", output_path);
+                let mut events_arr = Vec::new();
+                let mut stop_rx = stop_rx;
+                loop {
+                    tokio::select! {
+                        res = rx.recv() => {
+                            match res {
+                                Ok(e) => { 
+                                    // HIGH-VISIBILITY LOGGING FOR DEBUGGING
+                                    if let Some(ref k) = e.key {
+                                        println!(">>REC_DEBUG: Daemon Captured Key: '{}' (Type: {:?})", k, e.event_type);
                                     }
+
+                                    // ROBUST STOP HOTKEY CHECK (F9 / f9)
+                                    let is_f9 = e.key.as_deref().map(|s| s.to_lowercase()).map(|s| {
+                                        s == "f9" || s == "[f9]" || s == "function_9"
+                                    }).unwrap_or(false);
+
+                                    if is_f9 && (e.event_type == macropad_core::models::EventType::KeyDown || e.event_type == macropad_core::models::EventType::KeyUp) 
+                                    {
+                                        println!(">>REC_STOP: F9 Global Stop Hotkey detected! Finalizing...");
+                                        info!("Daemon: F9 Global Stop Hotkey detected. Finalizing recording.");
+                                        break;
+                                    }
+                                    events_arr.push(e); 
                                 }
-                                _ = &mut stop_rx => {
-                                    debug!("Daemon: Stop signal received during recording collection");
+                                Err(tokio::sync::broadcast::error::RecvError::Lagged(cnt)) => {
+                                    warn!("Daemon: Event channel lagged behind by {} messages", cnt);
+                                }
+                                Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                                    error!("Daemon: Event channel closed unexpectedly!");
                                     break;
                                 }
                             }
                         }
-                        
-                        // Drain any remaining messages
-                        while let Ok(e) = recorder.rx.try_recv() {
-                            events_arr.push(e);
+                        _ = &mut stop_rx => {
+                            debug!("Daemon: Stop signal received during recording collection");
+                            break;
                         }
-
-                        info!("Daemon: Recording finished. Captured {} raw events.", events_arr.len());
-                        let events = consolidate_mouse_segments(&events_arr);
-                        info!("Daemon: Finalized recording with {} consolidated events.", events.len());
-
-                        let rec = macropad_core::models::MacropadRec {
-                            meta: macropad_core::models::Metadata {
-                                version: 1,
-                                name: output_path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
-                                tags: Vec::new(),
-                                created: chrono::Local::now().date_naive(),
-                                requires: Vec::new(),
-                            },
-                            playback: macropad_core::models::PlaybackConfig::default(),
-                            vars:     None,
-                            events,
-                        };
-
-                        info!("Daemon: Saving recording to {:?}", output_path);
-                        if let Err(e) = macropad_core::save(&rec, &output_path) {
-                            error!("Daemon: Save error: {}", e);
-                        } else {
-                            info!("Daemon: File saved successfully.");
-                        }
-
-                        let mut s = state_clone.lock().unwrap();
-                        s.record_stop_tx = None;
-                        s.record_done_rx = None;
-                        s.set_idle();
-                        let _ = done_tx.send(());
-                    });
-
-                    IpcResponse::Ok
+                    }
                 }
-                Err(e) => {
-                    error!("Daemon: Failed to start recorder: {}", e);
-                    s.set_idle();
-                    IpcResponse::Error { message: e.to_string() }
+                
+                // Drain any remaining messages (IMPORTANT: ensure all events before the stop signal are flushed)
+                let mut extra_count = 0;
+                while let Ok(e) = rx.try_recv() {
+                    events_arr.push(e);
+                    extra_count += 1;
                 }
-            }
+                if extra_count > 0 {
+                    debug!("Daemon: Drained {} extra events from buffer.", extra_count);
+                }
+
+                info!("Daemon: Recording finished. Captured {} raw events.", events_arr.len());
+                let events = macropad_core::recorder::consolidate_mouse_segments(&events_arr);
+                info!("Daemon: Finalized recording with {} consolidated events.", events.len());
+
+                let rec = macropad_core::models::MacropadRec {
+                    meta: macropad_core::models::Metadata {
+                        version:       1,
+                        name:          output_path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
+                        tags:          Vec::new(),
+                        created:       chrono::Local::now().date_naive(),
+                        requires:      Vec::new(),
+                        origin_type:   macropad_core::models::OriginType::Recording,
+                        line_count:    None,
+                        command_count: None,
+                    },
+                    playback: macropad_core::models::PlaybackConfig::default(),
+                    vars:     None,
+                    events,
+                };
+
+                info!("Daemon: Saving recording to {:?}", output_path);
+                if let Err(e) = macropad_core::save(&rec, &output_path) {
+                    error!("Daemon: Save error: {}", e);
+                } else {
+                    info!("Daemon: File saved successfully.");
+                }
+
+                let mut s = state_clone.lock().unwrap();
+                s.record_stop_tx = None;
+                s.record_done_rx = None;
+                s.set_idle();
+                let _ = done_tx.send(());
+                
+                // Signal to GUI backend that recording is finished with full path
+                println!(">>REC_STOPPED: {:?}<<", output_path);
+            });
+
+            IpcResponse::Ok
         }
 
         IpcCommand::StopRecord => {
