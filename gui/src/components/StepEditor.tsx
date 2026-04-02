@@ -285,13 +285,13 @@ export function StepEditor({ macro, onClose }: Props) {
                         {/* View Toggle */}
                         <div className="flex bg-surface rounded-lg p-1 border border-surface-lighter shadow-inner">
                             <button 
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "human" ? "bg-primary/10 text-primary shadow-sm" : "text-text-dim hover:text-text-main"}`}
+                                className={`btn-brutal flex items-center gap-1.5 px-3 py-1.5 text-xs ${view === "human" ? "bg-primary/10 text-primary" : "text-text-dim hover:text-text-main"}`}
                                 onClick={() => setView("human")}
                             >
                                 <Users size={14} /> Human
                             </button>
                             <button 
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "raw" ? "bg-primary/10 text-primary shadow-sm" : "text-text-dim hover:text-text-main"}`}
+                                className={`btn-brutal flex items-center gap-1.5 px-3 py-1.5 text-xs ${view === "raw" ? "bg-primary/10 text-primary" : "text-text-dim hover:text-text-main"}`}
                                 onClick={() => setView("raw")}
                             >
                                 <Code2 size={14} /> Raw
@@ -303,7 +303,7 @@ export function StepEditor({ macro, onClose }: Props) {
                         {/* History Dropdown */}
                         <div className="relative">
                             <button 
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${showHistory ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-surface-lighter text-text-dim hover:text-text-main'}`}
+                                className={`btn-brutal flex items-center gap-1.5 px-3 py-1.5 text-xs border ${showHistory ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-surface-lighter text-text-dim hover:text-text-main'}`}
                                 onClick={() => setShowHistory(!showHistory)}
                             >
                                 <History size={14} /> History
@@ -357,7 +357,7 @@ export function StepEditor({ macro, onClose }: Props) {
                         <div className="w-px h-6 bg-surface-lighter mx-1"></div>
 
                         <button 
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors ${saved ? 'bg-green-500/20 text-text-main border border-green-500/30' : 'bg-secondary hover:bg-[#72b8d8] text-neutral shadow-[0_0_15px_rgba(137,207,240,0.2)]'}`}
+                            className={`btn-brutal flex items-center gap-1.5 px-4 py-2 text-sm ${saved ? 'bg-green-500/20 text-text-main border border-green-500/30' : 'bg-secondary hover:bg-[#72b8d8] text-neutral shadow-[0_0_15px_rgba(137,207,240,0.2)]'}`}
                             onClick={handleSave} 
                             disabled={saving}
                         >
@@ -366,7 +366,7 @@ export function StepEditor({ macro, onClose }: Props) {
                         </button>
                         
                         <button 
-                            className="p-2 text-text-dim hover:text-text-main hover:bg-surface-lighter rounded-lg transition-colors border border-transparent hover:border-surface-lighter"
+                            className="btn-brutal btn-ghost p-2 text-text-dim hover:text-text-main"
                             onClick={closeWithAnim}
                             title="Close"
                         >
@@ -425,7 +425,7 @@ export function StepEditor({ macro, onClose }: Props) {
                                             {e.key || e.value || (e.x !== undefined ? `(${e.x}, ${e.y})` : "") || (e.duration_ms !== undefined ? `${e.duration_ms}ms` : "") || "-"}
                                         </span>
                                         <button
-                                            className="w-6 h-6 flex items-center justify-center rounded-md text-text-dim/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                            className="btn-brutal btn-ghost w-6 h-6 flex items-center justify-center text-text-dim/40 hover:text-red-400"
                                             onClick={() => setEvents(prev => prev.filter((_, idx) => idx !== i))}
                                             title="Delete Raw Event"
                                         >

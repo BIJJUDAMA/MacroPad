@@ -8,15 +8,25 @@ import { SchedulerPanel } from './components/SchedulerPanel'
 import { ScriptLogPanel } from './components/ScriptLogPanel'
 import { LogProvider, useLogs } from './context/LogContext'
 import { useConfig } from './context/ConfigContext'
+import { RecordingProvider, useRecordingContext } from './context/RecordingContext'
 import { Database, Code2, Terminal, Settings, HelpCircle, Zap, Clock } from 'lucide-react'
+import { useEffect } from 'react'
 
 export type Tab = 'recorder' | 'scripting' | 'hotkeys' | 'scheduler' | 'terminal' | 'settings' | 'help'
 
 function App() {
   return (
     <LogProvider>
-      <AppContent />
+      <ConfigProviderWrapped />
     </LogProvider>
+  )
+}
+
+function ConfigProviderWrapped() {
+  return (
+    <RecordingProvider>
+      <AppContent />
+    </RecordingProvider>
   )
 }
 
@@ -24,6 +34,29 @@ function AppContent() {
   const [tab, setTab] = useState<Tab>('recorder')
   const { logLines, isExecuting } = useLogs()
   const { config, updateConfig } = useConfig()
+  const { toggleRecording } = useRecordingContext()
+
+  useEffect(() => {
+    const handleGlobalHotkeys = (e: KeyboardEvent) => {
+      // CTRL + T: Cycle Theme
+      if (e.ctrlKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        if (!config) return;
+        const nextTheme = config.ui_theme === 'light' ? 'dark' : 'light';
+        updateConfig({ ...config, ui_theme: nextTheme });
+      }
+
+      // CTRL + R: Toggle Recording
+      if (e.ctrlKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        setTab('recorder');
+        toggleRecording();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalHotkeys);
+    return () => window.removeEventListener('keydown', handleGlobalHotkeys);
+  }, [config, updateConfig, toggleRecording]);
 
   const isDark = config?.ui_theme === 'dark'
   const logoSrc = isDark ? '/Logo_Dark.png' : '/Logo_Light.png'

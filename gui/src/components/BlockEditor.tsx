@@ -1,6 +1,8 @@
 import { useRef } from "react"
 import { BlockStatement, BlockType, PALETTE } from "../types/script"
-import { Trash2, GripVertical, Plus } from 'lucide-react'
+import { Trash2, GripVertical, Plus, FolderOpen } from 'lucide-react'
+import { open } from '@tauri-apps/plugin-dialog'
+import { Tooltip } from './Tooltip'
 
 interface Props {
     blocks: BlockStatement[]
@@ -67,9 +69,11 @@ function BlockCard({
                     style={{ backgroundColor: color }}
                 />
                 
-                <div className="text-text-dim cursor-grab active:cursor-grabbing hover:text-text-main mt-0.5" title="Drag to reorder">
-                    <GripVertical size={16} />
-                </div>
+                <Tooltip name="Reorder" description="Drag to rearrange blocks" position="left">
+                    <div className="text-text-dim cursor-grab active:cursor-grabbing hover:text-text-main mt-0.5" title="Drag to reorder">
+                        <GripVertical size={16} />
+                    </div>
+                </Tooltip>
 
                 <div 
                     className="text-xs font-bold uppercase tracking-wider w-24 pt-1"
@@ -80,24 +84,45 @@ function BlockCard({
                 
                 <div className="flex-1 flex flex-col gap-2">
                     {Object.entries(block.args).map(([key, val]) => (
-                        <div key={key} className="flex items-center gap-2">
-                            <span className="text-[10px] text-text-dim uppercase tracking-widest w-16 text-right select-none">{key}</span>
-                            <input
-                                className="flex-1 bg-neutral border border-surface-lighter rounded-md px-2 py-1 text-xs text-text-main font-mono focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary/30 transition-all placeholder:text-text-muted"
-                                value={val}
-                                onChange={e => onUpdate(block.id, { ...block.args, [key]: e.target.value })}
-                            />
+                        <div key={key} className="flex items-center gap-2 group/arg">
+                            <span className="text-[10px] text-text-dim uppercase tracking-widest w-16 text-right select-none opacity-60 group-hover/arg:opacity-100 transition-opacity">{key}</span>
+                            <div className="flex-1 flex items-center gap-1.5">
+                                <input
+                                    className="flex-1 bg-neutral border border-surface-lighter rounded-md px-2 py-1 text-xs text-text-main font-mono focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary/30 transition-all placeholder:text-text-muted"
+                                    value={val}
+                                    onChange={e => onUpdate(block.id, { ...block.args, [key]: e.target.value })}
+                                />
+                                {key === 'path' && (
+                                    <Tooltip name="Browse" description="Select a recording or script file" position="top">
+                                        <button
+                                            onClick={async () => {
+                                                const selected = await open({
+                                                    multiple: false,
+                                                    filters: [{ name: 'Macropad Resource', extensions: ['mpr', 'mps'] }]
+                                                });
+                                                if (selected && typeof selected === 'string') {
+                                                    onUpdate(block.id, { ...block.args, [key]: selected });
+                                                }
+                                            }}
+                                            className="btn-brutal p-1 px-1.5 text-text-dim hover:text-secondary hover:border-secondary/50"
+                                        >
+                                            <FolderOpen size={14} />
+                                        </button>
+                                    </Tooltip>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                <button
-                    className="text-text-dim hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-surface hover:bg-surface-lighter rounded-md"
-                    onClick={() => onDelete(block.id)}
-                    title="Delete block"
-                >
-                    <Trash2 size={16} />
-                </button>
+                <Tooltip name="Delete" description="Remove this block" position="right">
+                    <button
+                        className="btn-brutal text-text-dim hover:text-red-400 p-1 opacity-60 hover:opacity-100"
+                        onClick={() => onDelete(block.id)}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </Tooltip>
             </div>
 
             {hasBody && (
@@ -117,7 +142,7 @@ function BlockCard({
                         {PALETTE.filter(p => !["if", "elif", "else"].includes(p.type)).map(p => (
                             <button
                                 key={p.type}
-                                className="flex items-center gap-1 bg-surface-light border border-surface-lighter hover:bg-surface-lighter rounded-md px-2 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors"
+                                className="btn-brutal flex items-center gap-1 bg-surface-light px-2 py-1 text-[10px] uppercase tracking-widest"
                                 style={{ color: p.color }}
                                 onClick={() => onAddChild(block.id, p.type)}
                             >
@@ -230,7 +255,7 @@ export function BlockEditor({ blocks, onChange, scriptDir: _ }: Props) {
                 {PALETTE.map(item => (
                     <button
                         key={item.type}
-                        className="flex flex-col text-left bg-surface border border-surface-lighter hover:border-text-dim rounded-lg p-3 mb-2 transition-all hover:-translate-y-0.5 select-none relative overflow-hidden"
+                        className="btn-brutal flex flex-col text-left p-3 mb-2 select-none relative overflow-hidden"
                         onClick={() => addBlock(item.type)}
                         title={item.description}
                     >

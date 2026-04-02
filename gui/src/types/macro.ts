@@ -6,7 +6,10 @@ export interface MacroInfo {
     event_count: number
     speed: number
     loop_count: number
-    requires: string[]
+    requires:      string[];
+    origin_type:   'recording' | 'script';
+    line_count?:    number;
+    command_count?: number;
 }
 
 export interface PlaybackResult {

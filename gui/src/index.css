@@ -8,14 +8,14 @@
 }
 
 :root {
-  /* BRUTALIST LIGHT THEME (Default) */
+  /* BRUTALIST LIGHT THEME (Reverted to Classic Yellow) */
   --primary: #FF3B30;
   --secondary: #007AFF;
-  --tertiary: #000000; /* Force black for visibility as requested */
+  --tertiary: #000000;
   --surface: #FFFFFF;
   --surface-light: #F2F2F7;
   --surface-lighter: #E5E5EA;
-  --neutral: #FFD426; /* Bright yellow background */
+  --neutral: #FFD426; /* Reverted to punchy yellow pop */
   --text-main: #000000;
   --text-dim: #111111;
   --text-muted: #333333;
@@ -33,17 +33,17 @@
 }
 
 .theme-dark {
-  /* CLEAN BRUTALIST DARK THEME */
+  /* PREMIUM BRUTALIST DARK THEME (Night Indigo Update) */
   --primary: #FF5F1F; /* Bold Orange */
   --secondary: #00FFFF;
-  --tertiary: #EBFF00; /* Electric Yellow instead of Purple */
-  --surface: #000000; /* Pitch black panels for high contrast */
-  --surface-light: #111111;
-  --surface-lighter: #222222;
-  --neutral: #1A1A1A; /* distinct grey background like the yellow in light mode */
-  --text-main: #ffffff;
-  --text-dim: #cccccc;
-  --text-muted: #888888;
+  --tertiary: #EBFF00; /* Electric Yellow */
+  --surface: #18181B; /* Deep Slate Zinc */
+  --surface-light: #27272A; 
+  --surface-lighter: #3F3F46;
+  --neutral: #1A1A2E; /* Deep Night Indigo - provides the 'Pop' equivalent to light mode yellow */
+  --text-main: #FAFAFA;
+  --text-dim: #D4D4D8;
+  --text-muted: #A1A1AA;
   --primary-hover: #E54E14;
   --primary-dim: rgba(255, 95, 31, 0.15);
 }
@@ -102,27 +102,68 @@
   }
 
   /* Specific handling for buttons to make them punchy but clean */
-  button {
+  button, .btn-brutal {
     border: 2px solid var(--text-main) !important;
     box-shadow: 3px 3px 0px 0px var(--text-main) !important;
-    transition: transform 0.1s, box-shadow 0.1s !important;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out !important;
     background-color: var(--surface) !important;
     color: var(--text-main) !important;
+    will-change: transform;
+    backface-visibility: hidden;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   
-  button.bg-primary {
+  .btn-brutal:hover, button:hover {
+    transform: translate(-1px, -1px) !important;
+    box-shadow: 4px 4px 0px 0px var(--text-main) !important;
+    filter: brightness(1.05);
+  }
+
+  .btn-brutal:active, button:active {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 1px 1px 0px 0px var(--text-main) !important;
+    filter: brightness(0.95);
+  }
+
+  /* Variants */
+  .btn-primary, button.bg-primary {
     background-color: var(--primary) !important;
     color: var(--surface) !important;
   }
 
-  button:active {
-    transform: translate(2px, 2px) !important;
-    box-shadow: 1px 1px 0px 0px var(--text-main) !important;
+  .btn-secondary, button.bg-secondary {
+    background-color: var(--secondary) !important;
+    color: var(--text-main) !important;
+  }
+
+  .btn-neutral, button.bg-neutral {
+    background-color: var(--neutral) !important;
+    color: var(--text-main) !important;
+  }
+
+  .btn-ghost {
+    background-color: transparent !important;
+    opacity: 0.6;
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--surface-light) !important;
+    border-color: var(--surface-lighter) !important;
+    box-shadow: 2px 2px 0px 0px var(--text-main) !important;
   }
 
   /* Scale back shadow utilities to be less intrusive */
   .shadow-xl, 
   .shadow-2xl,
+  .shadow-lg,
   .shadow-sm {
     box-shadow: 3px 3px 0px 0px var(--text-main) !important;
   }
@@ -143,3 +184,6 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--tertiary);
 }
+
+/* --- CHEVRON-MAXIMALIST ANIMATIONS --- */
+/* (Pulsing animations removed for a cleaner visual aesthetic) */

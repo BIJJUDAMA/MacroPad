@@ -40,7 +40,7 @@ export function VariablePromptModal({ macroName, requiredVars, onConfirm, onCanc
                     </div>
                     <button 
                         onClick={onCancel}
-                        className="p-2 hover:bg-white/5 rounded-full text-gray-500 hover:text-gray-300 transition-colors"
+                        className="btn-brutal p-2 text-text-dim hover:text-text-main opacity-60 hover:opacity-100"
                     >
                         <X size={20} />
                     </button>
@@ -82,15 +82,15 @@ export function VariablePromptModal({ macroName, requiredVars, onConfirm, onCanc
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex-1 px-4 py-3 bg-surface hover:bg-white/5 border border-surface-lighter text-gray-400 text-sm font-bold rounded-xl transition-all"
+                            className="btn-brutal flex-1 px-4 py-3 text-text-dim text-sm"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-[2] px-4 py-3 bg-secondary hover:bg-secondary-light text-black text-sm font-bold rounded-xl shadow-lg shadow-secondary/10 flex items-center justify-center gap-2 group transition-all"
+                            className="btn-brutal btn-secondary flex-[2] px-4 py-3 text-sm flex items-center justify-center gap-2 group"
                         >
-                            <Play size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                            <Play size={18} />
                             Start Playback
                         </button>
                     </div>

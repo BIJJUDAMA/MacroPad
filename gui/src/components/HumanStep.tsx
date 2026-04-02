@@ -45,13 +45,13 @@ export function HumanStep({ action, index, onDelete, onUpdateDelay }: Props) {
                                     <span className="text-[10px] text-text-dim">ms</span>
                                     <div className="flex gap-1 ml-auto">
                                         <button 
-                                            className="p-1 text-text-main hover:bg-green-400/20 rounded-md transition-colors" 
+                                            className="btn-brutal p-1 text-text-main hover:bg-green-400/20 opacity-80 hover:opacity-100" 
                                             onClick={handleSaveMs}
                                         >
                                             <Check size={14} />
                                         </button>
                                         <button 
-                                            className="p-1 text-text-dim hover:bg-surface-lighter rounded-md transition-colors" 
+                                            className="btn-brutal p-1 text-text-dim hover:bg-surface-lighter opacity-60 hover:opacity-100" 
                                             onClick={() => setEditingMs(false)}
                                         >
                                             <X size={14} />
@@ -78,7 +78,7 @@ export function HumanStep({ action, index, onDelete, onUpdateDelay }: Props) {
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     {action.raw_events.length > 1 && (
                         <button
-                            className="p-1.5 text-text-dim hover:bg-surface-lighter hover:text-text-main rounded-md transition-colors"
+                            className="btn-brutal p-1.5 text-text-dim hover:text-text-main opacity-60 hover:opacity-100"
                             onClick={() => setExpanded(e => !e)}
                             title={expanded ? "Collapse details" : "Expand details"}
                         >
@@ -86,7 +86,7 @@ export function HumanStep({ action, index, onDelete, onUpdateDelay }: Props) {
                         </button>
                     )}
                     <button
-                        className="p-1.5 text-text-dim/40 hover:bg-red-500/10 hover:text-red-400 rounded-md transition-colors"
+                        className="btn-brutal p-1.5 text-text-dim/40 hover:text-red-400 opacity-60 hover:opacity-100"
                         onClick={() => onDelete(action.id)}
                         title="Delete action"
                     >

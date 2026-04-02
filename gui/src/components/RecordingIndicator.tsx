@@ -43,14 +43,14 @@ export function RecordingIndicator({ state, onStop, error }: Props) {
 
             <div className="flex items-center gap-4 relative z-10">
                 <div className={`flex items-center justify-center transition-transform duration-500 ${justStarted ? 'scale-125' : ''}`}>
-                    <Radio size={20} className={`fill-primary text-primary ${state === "recording" ? 'animate-pulse' : ''}`} />
+                    <Radio size={20} className={`fill-primary text-primary`} />
                 </div>
                 
                 <div className="flex flex-col">
                     <span className={`font-bold text-sm tracking-widest uppercase transition-all duration-300 ${justStarted ? 'text-primary scale-110 origin-left' : 'text-primary/90'}`}>
                         {state === "saving" ? "Saving Data..." : justStarted ? "Recording Started" : "Recording Live Input"}
                     </span>
-                    {justStarted && <span className="text-[10px] text-primary/60 font-medium uppercase tracking-[0.2em] animate-pulse">Capturing Telemetry...</span>}
+                    {justStarted && <span className="text-[10px] text-primary/60 font-medium uppercase tracking-[0.2em]">Capturing Telemetry...</span>}
                 </div>
                 
                 {state === "recording" && !justStarted && (
@@ -64,7 +64,7 @@ export function RecordingIndicator({ state, onStop, error }: Props) {
 
             {(state === "recording" || state === "saving") && (
                 <button 
-                    className={`relative z-10 flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${state === "saving" ? 'bg-surface-lighter text-text-dim cursor-not-allowed opacity-50' : 'bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-neutral'}`}
+                    className={`btn-brutal relative z-10 flex items-center gap-2 text-xs ${state === "saving" ? 'bg-surface-lighter text-text-dim cursor-not-allowed opacity-50' : 'bg-primary/10 text-primary border border-primary/30'}`}
                     onClick={onStop}
                     disabled={state === "saving"}
                 >

@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{Manager, State};
 
+use chrono::{DateTime, Local};
+
 pub struct ConfigState {
     pub config: Mutex<macropad_core::models::AppConfig>,
     pub path: PathBuf,
@@ -11,14 +13,17 @@ pub struct ConfigState {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MacroInfo {
-    pub name:        String,
-    pub path:        String,
-    pub tags:        Vec<String>,
-    pub created:     String,
-    pub event_count: usize,
-    pub speed:       f64,
-    pub loop_count:  u32,
-    pub requires:    Vec<String>,
+    pub name:          String,
+    pub path:          String,
+    pub tags:          Vec<String>,
+    pub created:       String,
+    pub event_count:   usize,
+    pub speed:         f64,
+    pub loop_count:    u32,
+    pub requires:      Vec<String>,
+    pub origin_type:   String,
+    pub line_count:    Option<u32>,
+    pub command_count: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,25 +38,64 @@ async fn send_ipc(cmd: IpcCommand) -> Result<IpcResponse, String> {
         .map_err(|e| e.to_string())
 }
 
-fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
+async fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
     let p = PathBuf::from(path);
     let extension = p.extension().and_then(|e| e.to_str()).unwrap_or("");
 
     if extension == "mps" {
-        let name = p.file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("script")
-            .to_string();
-            
+        let content = std::fs::read_to_string(&p).unwrap_or_default();
+        tracing::info!("GUI Backend: Loading .mps info from {:?}, content len: {}", p, content.len());
+        let lines: Vec<&str> = content.lines().collect();
+        tracing::info!("GUI Backend: Found {} lines in .mps", lines.len());
+        
+        let mut name = p.file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| "unnamed".into());
+        let mut tags = Vec::new();
+        let mut command_count = 0;
+
+        for line in lines.iter().take(20) {
+            let trimmed = line.trim();
+            if trimmed.starts_with("// @name:") {
+                if let Some(val) = trimmed.splitn(2, ':').nth(1) {
+                    name = val.trim().trim_matches('"').to_string();
+                }
+            } else if trimmed.starts_with("// @tags:") {
+                if let Some(val) = trimmed.splitn(2, ':').nth(1) {
+                    let cleaned = val.trim().trim_matches(|c| c == '[' || c == ']');
+                    tags = cleaned.split(',')
+                        .map(|s| s.trim().trim_matches('"').to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                }
+            }
+        }
+
+        for line in &lines {
+            let trimmed = line.trim();
+            if !trimmed.is_empty() && !trimmed.starts_with("//") && !trimmed.starts_with("#") {
+                command_count += 1;
+            }
+        }
+
         return Ok(MacroInfo {
             name,
             path:        path.to_string(),
-            tags:        vec![],
-            created:     "unknown".to_string(),
+            tags,
+            created:     std::fs::metadata(&p)
+                .and_then(|m| m.created())
+                .map(|t| {
+                    let dt: chrono::DateTime<chrono::Local> = t.into();
+                    dt.format("%Y-%m-%d").to_string()
+                })
+                .unwrap_or_else(|_| "unknown".to_string()),
             event_count: 0,
             speed:       1.0,
             loop_count:  1,
             requires:    vec![],
+            origin_type: "script".into(),
+            line_count:  Some(lines.len() as u32),
+            command_count: Some(command_count),
         });
     }
 
@@ -59,32 +103,60 @@ fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
         .map_err(|e| format!("failed to load {}: {}", path, e))?;
 
     Ok(MacroInfo {
-        name:        rec.meta.name,
-        path:        path.to_string(),
-        tags:        rec.meta.tags,
-        created:     rec.meta.created.to_string(),
-        event_count: rec.events.len(),
-        speed:       rec.playback.speed,
-        loop_count:  rec.playback.loop_count,
-        requires:    rec.meta.requires,
+        name:          rec.meta.name,
+        path:          path.to_string(),
+        tags:          rec.meta.tags,
+        created:       rec.meta.created.to_string(),
+        event_count:   rec.events.len(),
+        speed:         rec.playback.speed,
+        loop_count:    rec.playback.loop_count,
+        requires:      rec.meta.requires,
+        origin_type:   "recording".into(),
+        line_count:    None,
+        command_count: None,
     })
 }
 
 #[tauri::command]
-async fn list_macros() -> Result<Vec<String>, String> {
-    match send_ipc(IpcCommand::ListMacros).await? {
-        IpcResponse::Macros { names } => Ok(names),
+async fn list_macros(
+    state: State<'_, ConfigState>,
+) -> Result<Vec<MacroInfo>, String> {
+    let (mpr_paths, mps_paths) = {
+        let c = state.config.lock().unwrap();
+        (c.mpr_paths.clone(), c.mps_paths.clone())
+    };
+
+    match send_ipc(IpcCommand::ListMacros { mpr_paths, mps_paths }).await? {
+        IpcResponse::Macros { items } => {
+            let mut infos = Vec::new();
+            for item in items {
+                infos.push(MacroInfo {
+                    name:          item.meta.name,
+                    path:          item.path.to_string_lossy().to_string(),
+                    tags:          item.meta.tags,
+                    created:       item.meta.created.to_string(),
+                    event_count:   0, // We'll fix this later or it's implicitly metadata
+                    speed:         1.0,
+                    loop_count:    1,
+                    requires:      item.meta.requires,
+                    origin_type:   format!("{:?}", item.meta.origin_type).to_lowercase(),
+                    line_count:    item.meta.line_count,
+                    command_count: item.meta.command_count,
+                });
+            }
+            Ok(infos)
+        }
         IpcResponse::Error { message } => Err(message),
         _ => Err("unexpected response".into()),
     }
 }
 
 #[tauri::command]
-fn get_macro_info(path: String) -> Result<MacroInfo, String> {
+async fn get_macro_info(path: String) -> Result<MacroInfo, String> {
     if !path.ends_with(".mpr") && !path.ends_with(".mps") {
         return Err(format!("expected a .mpr or .mps file, got: {}", path));
     }
-    load_macro_info(&path)
+    load_macro_info(&path).await
 }
 
 #[tauri::command]
@@ -195,7 +267,11 @@ async fn start_record(
 }
 
 #[tauri::command]
-async fn stop_record() -> Result<(), String> {
+async fn stop_record(window: tauri::Window) -> Result<(), String> {
+    // Restore window focus when manual stop is clicked
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+
     match send_ipc(IpcCommand::StopRecord).await? {
         IpcResponse::Ok => Ok(()),
         IpcResponse::Error { message } => Err(message),
@@ -521,9 +597,10 @@ pub fn run() {
             std::thread::spawn(move || {
                 #[cfg(windows)]
                 {
-                    // Kill existing daemon if any to avoid zombies.
+                    // Kill any existing daemon sidecar variants.
+                    // This uses a wildcard to catch 'daemon-x86_64-pc-windows-msvc.exe' etc.
                     let _ = std::process::Command::new("taskkill")
-                        .args(["/F", "/IM", "daemon.exe", "/T"])
+                        .args(["/F", "/IM", "daemon*", "/T"])
                         .stdout(std::process::Stdio::null())
                         .stderr(std::process::Stdio::null())
                         .status();
@@ -532,7 +609,46 @@ pub fn run() {
                 tracing::info!("GUI Backend: starting daemon sidecar using Tauri Sidecar API");
                 let sidecar = app_handle.shell().sidecar("daemon").unwrap();
                 match sidecar.spawn() {
-                    Ok((mut _rx, _child)) => tracing::info!("GUI Backend: Sidecar spawned successfully."),
+                    Ok((mut rx, _child)) => {
+                        tracing::info!("GUI Backend: Sidecar spawned successfully.");
+                        
+                        let ah = app_handle.clone();
+                        tauri::async_runtime::spawn(async move {
+                            use tauri::Emitter;
+                            while let Some(event) = rx.recv().await {
+                                if let tauri_plugin_shell::process::CommandEvent::Stdout(line) = event {
+                                    let s = String::from_utf8_lossy(&line);
+                                    if s.contains(">>REC_STOPPED:") {
+                                        tracing::info!("GUI Backend: Detected REC_STOPPED from daemon!");
+                                        
+                                        let mut saved_path = None;
+                                        if let Some(start) = s.find(">>REC_STOPPED:") {
+                                            if let Some(end) = s[start..].find("<<") {
+                                                let content = &s[start + ">>REC_STOPPED:".len() .. start + end].trim();
+                                                // Handle quoted path from {:?}
+                                                saved_path = Some(content.trim_matches('"').to_string());
+                                            }
+                                        }
+
+                                        // Unminimize and focus main window
+                                        if let Some(window) = ah.get_webview_window("main") {
+                                            tracing::info!("GUI Backend: Restoring window focus...");
+                                            let _ = window.unminimize();
+                                            let _ = window.set_focus();
+                                        } else {
+                                            // Fallback to any window
+                                            if let Some(window) = ah.webview_windows().values().next() {
+                                               let _ = window.unminimize();
+                                               let _ = window.set_focus();
+                                            }
+                                        }
+                                        // Tell frontend recording ended with the path
+                                        let _ = ah.emit("recording-finished", saved_path);
+                                    }
+                                }
+                            }
+                        });
+                    }
                     Err(e) => tracing::error!("GUI Backend: Failed to spawn sidecar: {}", e),
                 }
             });

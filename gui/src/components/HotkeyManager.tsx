@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { tauriInvoke } from '../lib/tauri'
-import { Zap, Trash2, Keyboard, Play, FileCode, AlertCircle } from 'lucide-react'
+import { Zap, Trash2, Keyboard, Play, FileCode, AlertCircle, FolderOpen } from 'lucide-react'
+import { open } from '@tauri-apps/plugin-dialog'
+import { Tooltip } from './Tooltip'
 
 interface HotkeyBinding {
   hotkey: string
@@ -73,16 +75,34 @@ export function HotkeyManager() {
         <div className="relative z-10 flex flex-col md:flex-row gap-6 items-end">
           <div className="flex-1 space-y-2 w-full">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary px-1">Macro Resource Path</label>
-            <div className="relative">
-               <FileCode className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim" size={18} />
-               <input 
-                type="text" 
-                placeholder="C:\Path\To\MyAutomation.mps"
-                value={newBinding.path}
-                onChange={e => setNewBinding(prev => ({ ...prev, path: e.target.value }))}
-                className="w-full bg-surface border border-surface-lighter rounded-2xl py-4 pl-12 pr-6 text-sm font-bold placeholder:text-text-dim/30 focus:outline-none focus:ring-4 focus:ring-secondary/10 focus:border-secondary transition-all"
-               />
-            </div>
+               <div className="flex items-center gap-2">
+                 <div className="relative flex-1">
+                   <FileCode className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim" size={18} />
+                   <input 
+                    type="text" 
+                    placeholder="C:\Path\To\MyAutomation.mps"
+                    value={newBinding.path}
+                    onChange={e => setNewBinding(prev => ({ ...prev, path: e.target.value }))}
+                    className="w-full bg-surface border border-surface-lighter rounded-2xl py-4 pl-12 pr-6 text-sm font-bold placeholder:text-text-dim/30 focus:outline-none focus:ring-4 focus:ring-secondary/10 focus:border-secondary transition-all"
+                   />
+                 </div>
+                 <Tooltip name="Browse" description="Select a macro file from disk" position="top">
+                   <button
+                    onClick={async () => {
+                      const selected = await open({
+                        multiple: false,
+                        filters: [{ name: 'Macropad', extensions: ['mpr', 'mps'] }]
+                      });
+                      if (selected && typeof selected === 'string') {
+                        setNewBinding(prev => ({ ...prev, path: selected }));
+                      }
+                    }}
+                    className="btn-brutal p-4 bg-surface text-text-dim hover:text-secondary transition-all"
+                   >
+                     <FolderOpen size={20} />
+                   </button>
+                 </Tooltip>
+               </div>
           </div>
 
           <div className="w-full md:w-64 space-y-2">
@@ -102,7 +122,7 @@ export function HotkeyManager() {
           <button 
             onClick={handleAddBinding}
             disabled={!newBinding.hotkey || !newBinding.path}
-            className="bg-secondary text-neutral-900 h-[58px] px-8 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
+            className="btn-brutal btn-secondary h-[58px] px-8 text-xs disabled:opacity-30 disabled:grayscale"
           >
             Deploy Link
           </button>
@@ -143,13 +163,13 @@ export function HotkeyManager() {
                         <div className="text-[10px] text-text-dim font-bold truncate mt-1">{b.path}</div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                         <button className="p-3 text-text-dim hover:text-primary transition-colors hover:bg-primary/5 rounded-xl">
+                    <div className="flex items-center gap-2 border-l border-surface-lighter pl-6">
+                         <button className="btn-brutal btn-primary p-3">
                             <Play size={18} />
                          </button>
                          <button 
                             onClick={() => removeBinding(b.hotkey)}
-                            className="p-3 text-text-dim hover:text-red-400 transition-colors hover:bg-red-500/5 rounded-xl"
+                            className="btn-brutal p-3 text-text-dim hover:text-red-400 hover:bg-red-500/5 opacity-60 hover:opacity-100"
                          >
                             <Trash2 size={18} />
                          </button>

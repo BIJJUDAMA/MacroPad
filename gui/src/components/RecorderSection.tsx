@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { MacroCard } from "./MacroCard"
 import { useDaemonStatus, useMacroList } from "../hooks/useDaemon"
-import { useRecording } from "../hooks/useRecording"
+import { useRecordingContext } from "../context/RecordingContext"
 import { RecordingIndicator } from "./RecordingIndicator"
 import { Search, Plus, Radio, RefreshCw, DatabaseZap, Zap } from 'lucide-react'
 import { Tooltip } from "./Tooltip"
@@ -19,15 +19,20 @@ export function RecorderSection({ paths, setPaths }: Props) {
     const [tagFilter, setTagFilter] = useState<string | null>(null)
     const [mode, setMode] = useState<'library' | 'record'>('library')
 
-    const onRecordSaved = useCallback((path: string) => {
-        addMacro(path)
-        setMode('library')
-    }, [addMacro])
-
-    const { state: recState, error: recError, startRecording, stopRecording } = useRecording(onRecordSaved)
+    const { state: recState, error: recError, lastSavedPath, startRecording, stopRecording } = useRecordingContext()
+    
+    // Auto-add new recording to library when finished
+    useEffect(() => {
+        if (lastSavedPath) {
+            console.log("RecorderSection: Automatically adding new recording to library:", lastSavedPath);
+            addMacro(lastSavedPath);
+            // Switch to library view so user can see it
+            setMode('library');
+        }
+    }, [lastSavedPath, addMacro]);
 
     const allTags = Array.from(new Set(macros.flatMap(m => m.tags))).sort()
-    
+
     const filtered = macros.filter(m => {
         const isMpr = m.path.toLowerCase().endsWith('.mpr')
         const matchSearch = m.name.toLowerCase().includes(search.toLowerCase())
@@ -63,15 +68,15 @@ export function RecorderSection({ paths, setPaths }: Props) {
                     </div>
 
                     <div className="flex bg-surface-light/50 p-1 rounded-xl border border-surface-lighter ml-4">
-                        <button 
+                        <button
                             onClick={() => setMode('library')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${mode === 'library' ? 'bg-surface shadow-lg text-primary text-primary shadow-[0_2px_10px_rgba(var(--color-primary-rgb),0.2)]' : 'text-tertiary hover:text-text-main'}`}
+                            className={`btn-brutal px-4 py-1.5 text-xs ${mode === 'library' ? 'bg-surface text-primary shadow-lg' : 'opacity-60 text-tertiary hover:opacity-100 hover:text-text-main'}`}
                         >
                             Library
                         </button>
-                        <button 
+                        <button
                             onClick={() => setMode('record')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${mode === 'record' ? 'bg-surface shadow-lg text-primary text-primary shadow-[0_2px_10px_rgba(var(--color-primary-rgb),0.2)]' : 'text-tertiary hover:text-text-main'}`}
+                            className={`btn-brutal px-4 py-1.5 text-xs ${mode === 'record' ? 'bg-surface text-primary shadow-lg' : 'opacity-60 text-tertiary hover:opacity-100 hover:text-text-main'}`}
                         >
                             Record New
                         </button>
@@ -81,24 +86,24 @@ export function RecorderSection({ paths, setPaths }: Props) {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     {status === "online" && (
                         <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-surface border border-surface-lighter rounded-lg mr-2 group relative cursor-help">
-                            <Zap size={14} className="text-secondary animate-pulse" />
+                            <Zap size={14} className="text-secondary" />
                             <span className="text-[10px] font-bold uppercase tracking-widest text-tertiary">Engine Ready</span>
                         </div>
                     )}
-                    
+
                     {mode === 'library' && (
                         <>
                             <Tooltip name="Add Recording" description="Browse your computer to add existing .mpr files to your recorder library.">
                                 <button
-                                    className="flex items-center gap-2 bg-surface hover:bg-surface-light border border-surface-lighter text-text-dim hover:text-text-main px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors"
+                                    className="btn-brutal bg-black text-white px-8 py-3 text-xs tracking-[0.2em]"
                                     onClick={handleBrowse}
                                 >
-                                    <Plus size={18} /> Import
+                                    <Plus size={18} /> New_Entry
                                 </button>
                             </Tooltip>
 
                             <button
-                                className="p-2.5 bg-surface hover:bg-surface-light border border-surface-lighter text-tertiary hover:text-text-main rounded-lg transition-colors"
+                                className="btn-brutal p-2.5 text-tertiary hover:text-text-main"
                                 onClick={refresh}
                             >
                                 <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
@@ -126,7 +131,7 @@ export function RecorderSection({ paths, setPaths }: Props) {
                             <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
                                 <button
                                     onClick={() => setTagFilter(null)}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${!tagFilter ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-surface border-surface-lighter text-tertiary hover:border-surface-light'}`}
+                                    className={`btn-brutal px-4 py-2 text-[10px] whitespace-nowrap ${!tagFilter ? 'bg-primary/20 border-primary/40 text-primary' : 'text-tertiary hover:border-surface-light'}`}
                                 >
                                     All
                                 </button>
@@ -134,7 +139,7 @@ export function RecorderSection({ paths, setPaths }: Props) {
                                     <button
                                         key={tag}
                                         onClick={() => setTagFilter(tag)}
-                                        className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${tagFilter === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-surface border-surface-lighter text-tertiary hover:border-surface-light'}`}
+                                        className={`btn-brutal px-4 py-2 text-[10px] whitespace-nowrap ${tagFilter === tag ? 'bg-primary/20 border-primary/40 text-primary' : 'text-tertiary hover:border-surface-light'}`}
                                     >
                                         {tag}
                                     </button>
@@ -143,7 +148,7 @@ export function RecorderSection({ paths, setPaths }: Props) {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto pr-2 custom-scrollbar">
                         {loading && filtered.length === 0 ? (
                             <div className="col-span-full py-20 text-center text-tertiary">Loading library...</div>
                         ) : error && filtered.length === 0 ? (
@@ -152,19 +157,18 @@ export function RecorderSection({ paths, setPaths }: Props) {
                             <div className="col-span-full flex flex-col items-center justify-center py-20 bg-surface/30 border border-dashed border-surface-lighter rounded-3xl">
                                 <DatabaseZap size={48} className="text-surface-lighter mb-4" />
                                 <p className="text-tertiary font-medium">No recordings found in library</p>
-                                <button 
+                                <button
                                     onClick={() => setMode('record')}
-                                    className="mt-4 text-primary text-xs font-bold uppercase tracking-widest hover:underline"
+                                    className="btn-brutal btn-primary mt-10 px-10 py-4 text-xs tracking-[0.2em]"
                                 >
-                                    Record your first macro →
+                                    Record Macro →
                                 </button>
                             </div>
                         ) : (
                             filtered.map(macro => (
-                                <MacroCard 
-                                    key={macro.path} 
-                                    macro={macro} 
-                                    onRefresh={refresh}
+                                <MacroCard
+                                    key={macro.path}
+                                    macro={macro}
                                     onRemove={() => removeMacro(macro.path)}
                                     onDuplicate={() => duplicateMacro(macro.path)}
                                 />
@@ -175,44 +179,44 @@ export function RecorderSection({ paths, setPaths }: Props) {
             ) : (
                 <div className="flex-1 flex flex-col items-center justify-center bg-surface/30 border border-surface-lighter rounded-3xl p-12 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    
+
                     <div className="relative z-10 flex flex-col items-center max-w-md text-center">
-                        <div className={`p-8 rounded-full mb-8 transition-all duration-500 shadow-2xl ${recState === 'recording' ? 'bg-red-500/20 border-red-500/50 scale-110 animate-pulse' : 'bg-primary/10 border-primary/20'}`}>
+                        <div className={`p-8 rounded-full mb-8 transition-all duration-500 shadow-2xl ${recState === 'recording' ? 'bg-red-500/20 border-red-500/50 scale-110' : 'bg-primary/10 border-primary/20'}`}>
                             <Radio size={48} className={recState === 'recording' ? "text-red-500" : "text-primary"} />
                         </div>
-                        
+
                         <h3 className="text-2xl font-bold text-text-main mb-4 tracking-tight uppercase">
                             {recState === 'idle' ? 'Ready to Record' : recState === 'recording' ? 'Recording in Progress' : 'Saving Recording...'}
                         </h3>
-                        
+
                         <p className="text-tertiary text-sm leading-relaxed mb-10">
-                            {recState === 'idle' 
-                                ? 'Press the button below to start capturing your keyboard and mouse actions. Your recording will be added to the library automatically.' 
-                                : 'Macropad is now capturing every movement. To finish, use the Global Stop Hotkey (Ctrl+Shift+S) or press the button below.'}
+                            {recState === 'idle'
+                                ? 'Press the button below to start capturing your keyboard and mouse actions. Your recording will be added to the library automatically.'
+                                : 'Macropad is now capturing every movement. To finish, use the Global Stop Hotkey (F9) or press the button below.'}
                         </p>
 
                         <div className="flex flex-col gap-4 w-full">
                             <button
-                                className={`w-full flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-lg font-black uppercase tracking-widest transition-all shadow-2xl ${recState === 'recording'
-                                        ? "bg-red-500 text-white hover:bg-red-600 shadow-red-500/20"
-                                        : "bg-primary text-neutral hover:bg-primary-hover shadow-primary/30"
+                                className={`btn-brutal w-full gap-3 px-10 py-6 text-xl tracking-[0.2em] ${recState === 'recording'
+                                    ? "bg-red-500 text-white"
+                                    : "btn-primary"
                                     }`}
                                 onClick={recState === 'recording' ? stopRecording : startRecording}
                             >
-                                <Radio size={24} className={recState === 'recording' ? "animate-pulse" : ""} />
+                                <Radio size={28} />
                                 {recState === 'idle' ? "Start Capturing" : "Stop Recording"}
                             </button>
-                            
+
                             {recState === 'idle' && (
-                                <button 
+                                <button
                                     onClick={() => setMode('library')}
-                                    className="px-6 py-3 text-tertiary hover:text-text-main text-xs font-bold uppercase tracking-widest transition-colors"
+                                    className="btn-brutal px-6 py-3 text-tertiary hover:text-text-main text-xs font-bold uppercase tracking-widest transition-colors"
                                 >
                                     Back to Library
                                 </button>
                             )}
                         </div>
-                        
+
                         <RecordingIndicator state={recState} error={recError} onStop={stopRecording} />
                     </div>
                 </div>

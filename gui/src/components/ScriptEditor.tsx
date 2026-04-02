@@ -198,15 +198,20 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
             currentPos += line.length + 1
         }
 
-        // Match run "path.nitsrec"
+        // Match run "path"
         const match = currentLine.match(/run\s+"([^"]+)"/)
         if (match) {
-            const macroName = match[1]
+            const macroName = match[1].trim()
             try {
-                // We need to resolve the path. Assume it's in the same dir as the script for now
-                // or just browse? Better to just use load_events if we can find it.
-                // For simplicity, let's assume it's a relative path in the same dir.
-                const fullPath = scriptDir ? `${scriptDir}/${macroName}` : macroName
+                // Check if absolute (Windows drive, Unix root, or Windows UNC)
+                const isAbsolute = /^[A-Z]:[\\/]/i.test(macroName) || macroName.startsWith('/') || macroName.startsWith('\\')
+                
+                let fullPath = macroName
+                if (!isAbsolute && scriptDir) {
+                    const sep = scriptDir.includes('\\') ? '\\' : '/'
+                    fullPath = `${scriptDir}${sep}${macroName}`
+                }
+
                 const events = await tauriInvoke<any[]>("load_events", { path: fullPath })
                 setActiveMacroInfo({ path: macroName, events })
             } catch (e) {
@@ -286,13 +291,13 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
                     {/* View Toggle */}
                     <div className="flex bg-surface rounded-lg p-1 border border-surface-lighter shadow-inner">
                         <button 
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "code" ? "bg-primary/10 text-primary shadow-sm" : "text-text-dim hover:text-text-main"}`}
+                            className={`btn-brutal px-3 py-1.5 text-xs ${view === "code" ? "bg-primary/10 text-primary shadow-sm" : "opacity-60 text-text-dim hover:opacity-100 hover:text-text-main"}`}
                             onClick={() => handleViewToggle("code")}
                         >
                             <Code2 size={14} /> Code
                         </button>
                         <button 
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors ${view === "blocks" ? "bg-primary/10 text-primary shadow-sm" : "text-text-dim hover:text-text-main"}`}
+                            className={`btn-brutal px-3 py-1.5 text-xs ${view === "blocks" ? "bg-primary/10 text-primary shadow-sm" : "opacity-60 text-text-dim hover:opacity-100 hover:text-text-main"}`}
                             onClick={() => handleViewToggle("blocks")}
                         >
                             <Blocks size={14} /> Blocks
@@ -301,27 +306,26 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
                     
                     <div className="w-px h-6 bg-surface-lighter"></div>
 
-                    <Tooltip name="New MacroScript" description="Create a fresh automation script (.mps) from scratch." align="start">
+                    <Tooltip name="New MacroScript" description="Create a fresh automation script (.mps) from scratch.">
                         <button 
-                            className="p-2 border border-surface-lighter hover:border-text-dim rounded-lg text-text-dim hover:text-text-main transition-colors bg-surface"
+                            className="btn-brutal p-2"
                             onClick={handleNew}
                         >
                             <FilePlus size={18} />
                         </button>
                     </Tooltip>
                     
-                    <Tooltip name="Open Asset" description="Load an existing .mps or .mpr file from your Library." align="start">
+                    <Tooltip name="Open Asset" description="Load an existing .mps or .mpr file from your Library.">
                         <button 
-                            className="p-2 border border-surface-lighter hover:border-text-dim rounded-lg text-text-dim hover:text-text-main transition-colors bg-surface"
+                            className="btn-brutal p-2 hover:bg-secondary hover:text-white"
                             onClick={handleOpen}
                         >
                             <FolderOpen size={18} />
                         </button>
                     </Tooltip>
-                    
-                    <Tooltip name="Dry Run" description="Test your script logic without sending actual inputs to the system.">
+                    <Tooltip name="Convert String" description="Convert current selection.">
                         <button 
-                            className="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-secondary/10 border border-secondary/30 text-secondary rounded-lg text-sm font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(137,207,240,0.1)]"
+                            className="btn-brutal btn-secondary px-4 py-2 text-sm"
                             onClick={() => handleRun(true)} 
                             disabled={running || !path}
                         >
@@ -331,7 +335,7 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
                     
                     <Tooltip name="Execute Script" description="Run the automation on your system. Press ESC to stop.">
                         <button 
-                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-neutral rounded-lg text-sm font-bold uppercase tracking-wider transition-colors shadow-[0_0_20px_var(--color-primary-dim)]"
+                            className="btn-brutal btn-primary px-4 py-2 text-sm"
                             onClick={() => handleRun(false)} 
                             disabled={running || !path}
                         >
@@ -342,16 +346,16 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
                     
                     <Tooltip name="Record Macro" description="Record your mouse and keyboard inputs to insert them at the cursor.">
                         <button 
-                            className={`p-2 border rounded-lg transition-colors ${isRecording ? 'bg-red-500/20 border-red-500/40 text-red-500 animate-pulse' : 'bg-surface border-surface-lighter text-text-dim hover:text-text-main'}`}
+                            className={`btn-brutal p-2 ${isRecording ? 'bg-red-500/20 border-red-500/40 text-red-500 animate-pulse' : 'text-text-dim'}`}
                             onClick={handleRecordHere}
                         >
                             <CircleDot size={18} />
                         </button>
                     </Tooltip>
 
-                    <Tooltip name="Peek Events" description="Quickly inspect the recorded events for the selected macro." align="end">
+                    <Tooltip name="Peek Events" description="Quickly inspect the recorded events for the selected macro.">
                         <button 
-                            className="p-2 border border-surface-lighter hover:border-text-dim rounded-lg text-text-dim hover:text-text-main transition-colors bg-surface"
+                            className="btn-brutal p-2"
                             onClick={handlePeek}
                         >
                             <Eye size={18} />
@@ -360,9 +364,9 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
 
                     <div className="w-px h-6 bg-surface-lighter"></div>
 
-                    <Tooltip name="Save Changes" description="Save your current progress to the file system." align="end">
+                    <Tooltip name="Save Changes" description="Save your current progress to the file system.">
                         <button 
-                            className={`p-2 border rounded-lg transition-colors ${saved ? 'bg-secondary/20 border-secondary/40 text-secondary' : 'bg-surface border-surface-lighter text-text-dim hover:text-text-main'}`}
+                            className={`btn-brutal p-2 ${saved ? 'btn-secondary text-white' : ''}`}
                             onClick={handleSave} 
                             disabled={saving || !path}
                         >
@@ -382,15 +386,15 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
                 <div className="flex-1 flex flex-col items-center justify-center gap-6">
                     <Code2 size={64} className="text-text-muted/20" strokeWidth={1} />
                     <p className="text-text-dim uppercase tracking-widest font-mono text-sm">NO EDITOR LOADED</p>
-                    <div className="flex gap-4 mt-4">
+                    <div className="flex flex-col md:flex-row gap-6 mt-10">
                         <button 
-                            className="px-6 py-3 border border-primary/40 bg-primary/10 text-primary rounded-xl font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors"
+                            className="btn-brutal btn-primary px-10 py-5 text-sm tracking-[0.2em]"
                             onClick={handleNew}
                         >
                             + New Script
                         </button>
                         <button 
-                            className="px-6 py-3 border border-surface-lighter bg-surface text-text-main rounded-xl font-bold uppercase tracking-wider hover:bg-surface-light transition-colors"
+                            className="btn-brutal px-10 py-5 text-sm tracking-[0.2em]"
                             onClick={handleOpen}
                         >
                             Open File
@@ -475,7 +479,7 @@ export function ScriptEditor({ initialPath }: ScriptEditorProps) {
                         ))}
                         <button
                             onClick={() => setRuntimeVars([...runtimeVars, { key: "", value: "" }])}
-                            className="px-3 py-1 bg-surface border border-surface-lighter rounded-md text-xs text-secondary hover:text-primary hover:border-primary/30 transition-colors flex items-center gap-1 font-mono shrink-0 shadow-[0_0_10px_rgba(137,207,240,0.05)]"
+                            className="btn-brutal px-3 py-1 bg-surface text-xs text-secondary hover:text-primary transition-colors flex items-center gap-1 font-mono shrink-0"
                         >
                             + Add Var
                         </button>
