@@ -69,6 +69,10 @@ impl Lexer {
         self.chars.get(self.pos).copied()
     }
 
+    fn peek_next(&self) -> Option<char> {
+        self.chars.get(self.pos + 1).copied()
+    }
+
     fn advance(&mut self) -> Option<char> {
         let ch = self.chars.get(self.pos).copied();
         self.pos += 1;
@@ -91,10 +95,37 @@ impl Lexer {
                     return Err(LexError::UnterminatedString { line: start_line })
                 }
                 Some('"') => break,
+                Some('\\') => {
+                    match self.advance() {
+                        Some('\\') => s.push('\\'),
+                        Some('"')  => s.push('"'),
+                        Some(escaped) => {
+                            // For everything else, keep the backslash and the char
+                            // (essential for Windows paths like \nitan, \test)
+                            s.push('\\');
+                            s.push(escaped);
+                        }
+                        None => return Err(LexError::UnterminatedString { line: start_line }),
+                    }
+                }
                 Some(ch)  => s.push(ch),
             }
         }
 
+        Ok(s)
+    }
+
+    fn read_raw_string(&mut self) -> Result<String, LexError> {
+        let start_line = self.line;
+        let mut s = String::new();
+
+        loop {
+            match self.advance() {
+                None => return Err(LexError::UnterminatedString { line: start_line }),
+                Some('"') => break,
+                Some(ch)  => s.push(ch),
+            }
+        }
         Ok(s)
     }
 
@@ -152,6 +183,7 @@ impl Lexer {
                     self.advance();
                 }
 
+
                 Some('"') => {
                     self.advance();
                     let s = self.read_string()?;
@@ -176,6 +208,15 @@ impl Lexer {
                 }
 
                 Some(c) if c.is_alphabetic() || c == '_' || c == '$' => {
+                    // Check for raw string r"..."
+                    if c == 'r' && matches!(self.peek_next(), Some('"')) {
+                        self.advance(); // consume 'r'
+                        self.advance(); // consume '"'
+                        let s = self.read_raw_string()?;
+                        tokens.push((Token::StringLit(s), self.line));
+                        continue;
+                    }
+
                     let ch    = self.advance().unwrap();
                     let ident = self.read_ident(ch);
 

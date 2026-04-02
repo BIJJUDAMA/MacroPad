@@ -131,7 +131,13 @@ impl Runner {
                     } else {
                         let result = send_command(cmd).await;
                         match result {
-                            Ok(IpcResponse::Ok) => scope.set_last_result(true),
+                            Ok(IpcResponse::Ok) => {
+                                scope.set_last_result(true);
+                                // Wait for the macro to actually finish before moving to the next statement
+                                if let Err(e) = self.wait_for_daemon_idle().await {
+                                    eprintln!("[script] wait error: {}", e);
+                                }
+                            }
                             Ok(IpcResponse::Error { message }) => {
                                 eprintln!("[script] run error: {}", message);
                                 scope.set_last_result(false);
@@ -240,6 +246,37 @@ impl Runner {
         })
     }
 
+    async fn wait_for_daemon_idle(&self) -> Result<(), RunnerError> {
+        let start = std::time::Instant::now();
+        let timeout = Duration::from_secs(30 * 60); // 30 minute safety timeout
+
+        // Give the daemon a moment to actually transition to "Playing" state
+        sleep(Duration::from_millis(100)).await;
+
+        loop {
+            if start.elapsed() > timeout {
+                return Err(RunnerError::Generic("timeout waiting for macro completion".into()));
+            }
+
+            match send_command(IpcCommand::Status).await {
+                Ok(IpcResponse::Status { status, .. }) => {
+                    if status == "Idle" || status == "\"Idle\"" {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    // If IPC fails, assume the worst or just log it
+                    return Err(RunnerError::Ipc(format!("failed to poll status: {}", e)));
+                }
+                _ => {}
+            }
+
+            sleep(Duration::from_millis(200)).await;
+        }
+
+        Ok(())
+    }
+
     async fn eval_condition(
         &self,
         condition: &Condition,
@@ -275,10 +312,13 @@ impl Runner {
     }
 
     fn resolve_path(&self, raw: &str) -> PathBuf {
+        let raw = raw.trim();
         let p = Path::new(raw);
+
         if p.is_absolute() {
             return p.to_path_buf();
         }
+
         if raw.starts_with("~/") || raw.starts_with("~\\") {
             let home = std::env::var("USERPROFILE")
                 .or_else(|_| std::env::var("HOME"))

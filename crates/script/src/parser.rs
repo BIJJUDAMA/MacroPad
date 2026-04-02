@@ -95,7 +95,7 @@ impl Parser {
     fn parse_let(&mut self) -> Result<Statement, ParseError> {
         self.advance(); // consume `let`
         let name = match self.advance().clone() {
-            Token::Ident(n) => n,
+            Token::Ident(n) => if n.starts_with('$') { n[1..].to_string() } else { n },
             other => return Err(ParseError::Expected {
                 line:     self.line(),
                 expected: "identifier".into(),
