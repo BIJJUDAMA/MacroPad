@@ -1,4 +1,3 @@
-use macropad_core::models::MacropadRec;
 use platform::hotkey::{Hotkey, HotkeyManager};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -27,7 +26,8 @@ pub struct AppState {
     pub last_result:    Option<bool>,
     pub record_stop_tx: Option<oneshot::Sender<()>>,
     pub record_done_rx: Option<oneshot::Receiver<()>>,
-    pub macros:         HashMap<String, MacropadRec>,
+    pub macros:         HashMap<String, macropad_core::models::Metadata>,
+    pub event_bus:      tokio::sync::broadcast::Sender<macropad_core::models::Event>,
 }
 
 impl AppState {
@@ -40,6 +40,7 @@ impl AppState {
             record_stop_tx: None,
             record_done_rx: None,
             macros:         HashMap::new(),
+            event_bus:      tokio::sync::broadcast::channel(1024).0,
         };
         if let Err(e) = s.load_hotkeys() {
             warn!("failed to load hotkeys: {}", e);
@@ -94,6 +95,25 @@ impl AppState {
 
     pub fn set_recording(&mut self) {
         self.status = PlaybackStatus::Recording;
+    }
+
+    pub fn refresh_macros(&mut self, mpr_paths: &[PathBuf], mps_paths: &[PathBuf]) {
+        self.macros.clear();
+        
+        // Scan MPR files
+        for path in mpr_paths {
+            if let Ok(rec) = macropad_core::load(path) {
+                let mut meta = rec.meta;
+                meta.origin_type = macropad_core::models::OriginType::Recording;
+                self.macros.insert(path.to_string_lossy().to_string(), meta);
+            }
+        }
+
+        // Scan MPS files
+        for path in mps_paths {
+            let meta = crate::scanner::scan_script(path);
+            self.macros.insert(path.to_string_lossy().to_string(), meta);
+        }
     }
 }
 
