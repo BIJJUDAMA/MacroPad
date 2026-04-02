@@ -1,4 +1,5 @@
 mod ipc;
+mod scanner;
 mod scheduler;
 mod state;
 
@@ -15,6 +16,7 @@ use global_hotkey::{
     hotkey::{HotKey, Modifiers, Code}
 };
 use platform::hotkey::Modifier;
+use rdev::Key;
 
 #[tokio::main]
 async fn main() {
@@ -85,6 +87,36 @@ async fn main() {
             std::thread::sleep(std::time::Duration::from_millis(50));
         }
     });
+
+    // Start Singleton Recorder Hook (rdev)
+    {
+        let state_rec = state.clone();
+        std::thread::spawn(move || {
+            use rdev::listen;
+            use macropad_core::recorder::convert_event;
+            use std::time::Instant;
+
+            let start = Instant::now();
+            let event_bus = {
+                let s = state_rec.lock().unwrap();
+                s.event_bus.clone()
+            };
+
+            println!(">>DEBUG: Daemon: Starting singleton OS event hook...");
+            
+            let callback = move |rdev_event: rdev::Event| {
+                let time_ms = start.elapsed().as_millis() as u64;
+                if let Some(event) = convert_event(rdev_event, time_ms) {
+                    // Broadcast to all potential subscribers (recording tasks)
+                    let _ = event_bus.send(event);
+                }
+            };
+
+            if let Err(e) = listen(callback) {
+                error!("Daemon: Singleton OS Hook - listen error: {:?}", e);
+            }
+        });
+    }
 
     let shutdown = async {
         signal::ctrl_c()
