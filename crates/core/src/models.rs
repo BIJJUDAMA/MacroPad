@@ -4,6 +4,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum OriginType {
+    Recording,
+    Script,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MacropadRec {
     pub meta:     Metadata,
@@ -14,12 +21,20 @@ pub struct MacropadRec {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metadata {
-    pub version:  u32,
-    pub name:     String,
-    pub created:  NaiveDate,
-    pub tags:     Vec<String>,
+    pub version:       u32,
+    pub name:          String,
+    pub created:       NaiveDate,
+    pub tags:          Vec<String>,
     #[serde(default)]
-    pub requires: Vec<String>,
+    pub requires:      Vec<String>,
+    #[serde(default = "default_origin")]
+    pub origin_type:   OriginType,
+    pub line_count:    Option<u32>,
+    pub command_count: Option<u32>,
+}
+
+fn default_origin() -> OriginType {
+    OriginType::Recording
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
