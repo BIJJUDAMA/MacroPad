@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{Manager, State};
 
-use chrono::{DateTime, Local};
+
 
 pub struct ConfigState {
     pub config: Mutex<macropad_core::models::AppConfig>,
