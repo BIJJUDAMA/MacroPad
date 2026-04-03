@@ -166,7 +166,7 @@ async fn handle_command(
             vars,
             overrides,
         } => {
-            let is_script = path.extension().map_or(false, |e| e == "mps");
+            let is_script = path.extension().is_some_and(|e| e == "mps");
 
             if is_script {
                 {

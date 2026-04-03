@@ -19,11 +19,11 @@ pub fn scan_script(path: &Path) -> Metadata {
         // Only look at first 20 lines for metadata
         let trimmed = line.trim();
         if trimmed.starts_with("// @name:") {
-            if let Some(val) = trimmed.splitn(2, ':').nth(1) {
+            if let Some(val) = trimmed.split_once(':').map(|x| x.1) {
                 name = val.trim().trim_matches('"').to_string();
             }
         } else if trimmed.starts_with("// @tags:") {
-            if let Some(val) = trimmed.splitn(2, ':').nth(1) {
+            if let Some(val) = trimmed.split_once(':').map(|x| x.1) {
                 // Expecting ["a", "b"]
                 let cleaned = val.trim().trim_matches(|c| c == '[' || c == ']');
                 tags = cleaned
