@@ -103,19 +103,11 @@ pub async fn play(
 
     let scale = rec.playback.scale_to_current && (rec_w != cur_w || rec_h != cur_h);
 
-    let mut enigo = if !dry_run {
-        Some(Enigo::new(&Settings::default()).map_err(|e| PlayerError::EnigoInit(e.to_string()))?)
-    } else {
-        None
-    };
-
     // Shared "Wait for Window" logic consolidated in the player
     if let Some(target_window) = &rec.playback.wait_for_window {
         if !dry_run {
             let query = platform::window::WindowQuery::new(target_window)
                 .timeout(rec.playback.wait_timeout_ms);
-            // Ignore failure here? Or return error?
-            // Better to return error if window not found.
             platform::window::wait_for_window(query)
                 .await
                 .map_err(|e| PlayerError::UnknownKey(format!("window wait failed: {}", e)))?;
@@ -123,6 +115,12 @@ pub async fn play(
             debug!("would wait for window: {}", target_window);
         }
     }
+
+    let mut enigo = if !dry_run {
+        Some(Enigo::new(&Settings::default()).map_err(|e| PlayerError::EnigoInit(e.to_string()))?)
+    } else {
+        None
+    };
 
     for iteration in 0..loop_count {
         if dry_run {
