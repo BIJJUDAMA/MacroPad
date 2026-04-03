@@ -20,7 +20,7 @@ export function RecorderSection({ paths, setPaths }: Props) {
     const [mode, setMode] = useState<'library' | 'record'>('library')
 
     const { state: recState, error: recError, lastSavedPath, startRecording, stopRecording } = useRecordingContext()
-    
+
     // Auto-add new recording to library when finished
     useEffect(() => {
         if (lastSavedPath) {
@@ -98,7 +98,7 @@ export function RecorderSection({ paths, setPaths }: Props) {
                                     className="btn-brutal bg-black text-white px-8 py-3 text-xs tracking-[0.2em]"
                                     onClick={handleBrowse}
                                 >
-                                    <Plus size={18} /> New_Entry
+                                    <Plus size={18} /> Import Recording
                                 </button>
                             </Tooltip>
 
