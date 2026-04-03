@@ -185,5 +185,8 @@
   background: var(--tertiary);
 }
 
-/* --- CHEVRON-MAXIMALIST ANIMATIONS --- */
-/* (Pulsing animations removed for a cleaner visual aesthetic) */
+
+/* --- FOOTER SPARE --- */
+.mt-auto {
+  margin-top: auto;
+}

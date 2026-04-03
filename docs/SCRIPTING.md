@@ -1,5 +1,8 @@
 # Macropad Scripting Guide (`.mps`)
 
+> [!CAUTION]
+> **WORK IN PROGRESS**: The scripting engine and `.mps` format are currently under active development. Some features described below may be partially implemented or unavailable in the current release.
+
 Macropad Script (`.mps`) elevates simple recordings into dynamic automation workflows. The scripting engine is built for reliability, providing Turing-complete logic without the overhead of a full general-purpose runtime.
 
 ---

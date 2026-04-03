@@ -63,10 +63,10 @@ function AppContent() {
 
   const navItems = [
     { id: 'recorder', icon: Database, label: 'Recorder' },
-    { id: 'scripting', icon: Code2, label: 'Scripting' },
-    { id: 'hotkeys', icon: Zap, label: 'Hotkeys' },
-    { id: 'scheduler', icon: Clock, label: 'Schedules' },
-    { id: 'terminal', icon: Terminal, label: 'Console' },
+    { id: 'scripting', icon: Code2, label: 'Scripting', comingSoon: true },
+    { id: 'hotkeys', icon: Zap, label: 'Hotkeys', comingSoon: true },
+    { id: 'scheduler', icon: Clock, label: 'Schedules', comingSoon: true },
+    { id: 'terminal', icon: Terminal, label: 'Console', comingSoon: true },
     { id: 'settings', icon: Settings, label: 'Settings' },
     { id: 'help', icon: HelpCircle, label: 'Help' },
   ] as const
@@ -99,23 +99,34 @@ function AppContent() {
           {navItems.map(item => {
             const isActive = tab === item.id
             const Icon = item.icon
+            const isComingSoon = 'comingSoon' in item && item.comingSoon;
             return (
               <button
                 key={item.id}
-                onClick={() => setTab(item.id)}
-                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 relative group
+                onClick={() => !isComingSoon && setTab(item.id)}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 relative group overflow-hidden
                   ${isActive
                     ? 'bg-primary/10 text-primary shadow-[inset_0_0_20px_var(--color-primary-dim)] border border-primary/20'
-                    : 'text-text-dim hover:text-text-main hover:bg-surface-light border border-transparent'}
+                    : isComingSoon
+                      ? 'text-text-muted/40 cursor-not-allowed border border-transparent'
+                      : 'text-text-dim hover:text-text-main hover:bg-surface-light border border-transparent'}
                 `}
               >
-                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : !isComingSoon ? 'group-hover:scale-110' : 'grayscale opacity-30 shadow-none'}`}>
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
 
-                <span className={`text-sm font-bold uppercase tracking-widest transition-colors ${isActive ? 'text-primary' : 'text-text-dim'}`}>
-                  {item.label}
-                </span>
+                <div className="flex flex-col items-start">
+                  <span className={`text-sm font-bold uppercase tracking-widest transition-colors 
+                    ${isActive ? 'text-primary' : isComingSoon ? 'text-text-muted/40' : 'text-text-dim'}`}>
+                    {item.label}
+                  </span>
+                  {isComingSoon && (
+                    <span className="text-[11px] text-primary font-bold uppercase tracking-tighter leading-none mt-0.5">
+                      Coming Soon
+                    </span>
+                  )}
+                </div>
 
                 {/* Active Indicator Line */}
                 {isActive && (

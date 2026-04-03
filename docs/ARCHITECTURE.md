@@ -33,11 +33,11 @@ The protocol uses a customized JSON-based schema for command serialization, ensu
 
 ## Low-Level Implementation
 
-| Layer | Technology | Responsibility |
-| :--- | :--- | :--- |
-| **User Space** | React / Tailwind | Interface, configuration, and library visualizer. |
-| **Middle-ware** | Rust / Tokio | Async task scheduling, IPC server, and script runner. |
-| **OS Hooks** | C / Win32 / Quartz | Low-level hardware signal interception and injection. |
+| Layer | Technology | Responsibility | Status |
+| :--- | :--- | :--- | :--- |
+| **User Space** | React / Tailwind | Interface, configuration, and library visualizer. | Stable |
+| **Middle-ware** | Rust / Tokio | Async task scheduling, IPC server, and script runner. | **In Dev** |
+| **OS Hooks** | C / Win32 / Quartz | Low-level hardware signal interception and injection. | Stable |
 
 ---
 

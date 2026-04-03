@@ -44,10 +44,10 @@ Manage hundreds of macros through a clean, searchable interface. Tag automations
 **Intelligent Display Scaling**
 Record a macro on a 4K desktop, play it back on a 1080p laptop. Macropad embeds the native display resolution into the recording and dynamically scales absolute mouse coordinates at runtime to guarantee the cursor hits the exact same relative targets.
 
-**Dynamic Macro Scripting**
+**Dynamic Macro Scripting (Coming Soon)**
 When static recording isn't enough, switch to Macropad Script (`.mps`). Evaluate screen pixels in real-time, generate randomized keystroke delays to simulate human typing cadence, and programmatically loop through smaller "component macros" to build massive, conditional workflows.
 
-**Global Hotkey Routing**
+**Global Hotkey Routing (Coming Soon)**
 
 The daemon maintains a dedicated listening thread for hotkey chords. When a chord fires, for example `Ctrl+Shift+Alt+F12`, playback starts immediately regardless of which application has focus, what the system load is, or whether the GUI is running at all. The listening thread does not share a queue with the execution engine.
 
