@@ -35,9 +35,9 @@ impl Rgba {
     }
 
     pub fn distance(&self, other: &Rgba) -> u32 {
-        let dr = (self.r as i32 - other.r as i32).abs() as u32;
-        let dg = (self.g as i32 - other.g as i32).abs() as u32;
-        let db = (self.b as i32 - other.b as i32).abs() as u32;
+        let dr = (self.r as i32 - other.r as i32).unsigned_abs();
+        let dg = (self.g as i32 - other.g as i32).unsigned_abs();
+        let db = (self.b as i32 - other.b as i32).unsigned_abs();
         dr + dg + db
     }
 }

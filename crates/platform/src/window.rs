@@ -128,8 +128,8 @@ fn window_exists_regex(pattern: &str) -> Result<bool, WindowError> {
 
 #[cfg(windows)]
 thread_local! {
-    static LAST_TITLE: std::cell::RefCell<String> = std::cell::RefCell::new(String::new());
-    static PATTERN: std::cell::RefCell<Option<SimpleRegex>> = std::cell::RefCell::new(None);
+    static LAST_TITLE: std::cell::RefCell<String> = const { std::cell::RefCell::new(String::new()) };
+    static PATTERN: std::cell::RefCell<Option<SimpleRegex>> = const { std::cell::RefCell::new(None) };
 }
 
 #[cfg(target_os = "linux")]
