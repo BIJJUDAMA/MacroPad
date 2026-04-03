@@ -4,8 +4,6 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{Manager, State};
 
-
-
 pub struct ConfigState {
     pub config: Mutex<macropad_core::models::AppConfig>,
     pub path: PathBuf,

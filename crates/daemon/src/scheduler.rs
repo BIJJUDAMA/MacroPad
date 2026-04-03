@@ -167,8 +167,7 @@ async fn run_macro_task_background(path: PathBuf, state: SharedState) {
         match macropad_core::load(&path) {
             Ok(rec) => {
                 let (_player, abort_rx) = macropad_core::Player::new();
-                macropad_core::play(&rec, None, false, abort_rx, None)
-                    .map_err(|e| e.to_string())
+                macropad_core::play(&rec, None, false, abort_rx, None).map_err(|e| e.to_string())
             }
             Err(e) => Err(e.to_string()),
         }
