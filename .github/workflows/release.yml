@@ -71,26 +71,19 @@ jobs:
             echo "release_type=Patch Release" >> $GITHUB_OUTPUT
           fi
 
-          if [ "$MAJOR" -eq 0 ] || ([ "$MAJOR" -eq 1 ] && [ "$MINOR" -eq 0 ] && [ "$PATCH" -eq 0 ]); then
-             echo "use_readme=true" >> $GITHUB_OUTPUT
+          # Flag for initial 1.0.0 release — no changelog exists yet
+          if [ "$MAJOR" = "1" ] && [ "$MINOR" = "0" ] && [ "$PATCH" = "0" ]; then
+            echo "is_initial=true" >> $GITHUB_OUTPUT
           else
-             echo "use_readme=false" >> $GITHUB_OUTPUT
+            echo "is_initial=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Extract release notes
         id: notes
         shell: bash
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          USE_README=${{ steps.version.outputs.use_readme }}
-
-          if [ "$USE_README" = "true" ]; then
-            NOTES=$(awk '/^## ✨ Key Features/{found=1; next} found && /^##/{exit} found{print}' README.md)
-            if [ -z "$NOTES" ]; then NOTES="Initial release. Check README."; fi
-          else
-            NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
-            if [ -z "$NOTES" ]; then NOTES="No changelog entry found."; fi
-          fi
+          NOTES=$(awk '/^## ✨ Key Features/{found=1; next} found && /^##/{exit} found{print}' "$GITHUB_WORKSPACE/README.md")
+          if [ -z "$NOTES" ]; then NOTES="See README for details."; fi
 
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES"     >> $GITHUB_OUTPUT
@@ -106,21 +99,15 @@ jobs:
       - name: Prepare Sidecar
         shell: bash
         run: |
-          # Determine the binary extension
           EXT=""
           if [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
             EXT=".exe"
           fi
-          
-          # Determine host triple
-          # Note: We use a simple mapping or just rustc to get the triple
+
           TRIPLE=$(rustc -vV | grep 'host:' | cut -d' ' -f2)
           echo "Target triple: $TRIPLE"
-          
-          # Ensure directory exists
+
           mkdir -p gui/src-tauri
-          
-          # Copy and rename the binary to the sidecar path
           cp target/release/daemon$EXT gui/src-tauri/daemon-$TRIPLE$EXT
           ls -lh gui/src-tauri/daemon-$TRIPLE$EXT
 
@@ -137,7 +124,48 @@ jobs:
             ---
             Version: ${{ steps.version.outputs.version }}
             Type: ${{ steps.version.outputs.release_type }}
-            Full Changelog: https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
+            README: https://github.com/${{ github.repository }}/blob/main/README.md
+            Docs: https://github.com/${{ github.repository }}/tree/main/docs
+            ${{ steps.version.outputs.is_initial == 'false' && format('Full Changelog: https://github.com/{0}/blob/main/CHANGELOG.md', github.repository) || '' }}
           releaseDraft: false
           prerelease: false
           projectPath: gui
+
+  update-readme:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract tag
+        id: tag
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Update banner version
+        run: |
+          VERSION="${{ steps.tag.outputs.version }}"
+          sed -i "s|BUILD <tspan fill=\"#E8561A\">v[0-9]*\.[0-9]*\.[0-9]*</tspan>|BUILD <tspan fill=\"#E8561A\">v${VERSION}</tspan>|g" docs/assets/banner.svg
+
+      - name: Replace logo in README
+        run: |
+          python3 -c "
+          import re, pathlib
+          readme = pathlib.Path('README.md').read_text()
+          new_img = '<img src=\"docs/assets/banner.svg\" width=\"100%\" alt=\"Macropad Banner\">'
+          readme = re.sub(r'<img\s[^>]*docs/assets/logo_light\.png[^>]*>', new_img, readme)
+          pathlib.Path('README.md').write_text(readme)
+          "
+
+      - name: Commit and push
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git add docs/assets/banner.svg README.md
+          git diff --staged --quiet || git commit -m "style: update release banner to v${{ steps.tag.outputs.version }}"
+          git push origin main

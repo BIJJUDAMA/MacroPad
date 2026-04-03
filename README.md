@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo_light.png" width="320" alt="Macropad Logo">
+  <img src="docs/assets/banner.svg" width="100%" alt="Macropad Banner">
 </p>
 
 <p align="center">

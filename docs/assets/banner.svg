@@ -1,0 +1,69 @@
+<svg width="1200" height="280" viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00BFD8" stop-opacity="1"/>
+      <stop offset="85%" stop-color="#00BFD8" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E8561A" stop-opacity="1"/>
+      <stop offset="85%" stop-color="#E8561A" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5A6A7A" stop-opacity="0.85"/>
+      <stop offset="72%" stop-color="#9AABB8" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="frameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <radialGradient id="gemGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD580" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#E8561A" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#E8561A" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="contentClip">
+      <rect x="12" y="12" width="1176" height="256" rx="6"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#contentClip)">
+    <rect x="12" y="12" width="1176" height="256" fill="#0e0f11"/>
+    <ellipse cx="450" cy="80" rx="200" ry="150" fill="url(#gemGlow)"/>
+
+    <polygon points="-10,280 120,280 250,140 370,220 490,80 560,145 560,178 490,112 370,252 250,172 128,312 -10,312"
+      fill="url(#steelGrad)" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.2" opacity="0.5"/>
+    <polygon points="-10,262 110,262 240,122 360,202 480,62 542,122 542,150 480,90 360,230 240,150 118,290 -10,290"
+      fill="url(#steelGrad)" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.1" opacity="0.3"/>
+    <polygon points="-10,248 100,248 230,108 350,188 470,48 524,104 524,132 470,76 350,216 230,136 108,276 -10,276"
+      fill="url(#orangeGrad)"/>
+    <polygon points="-10,232 90,232 220,92 340,172 460,32 506,74 506,102 460,60 340,200 220,120 98,260 -10,260"
+      fill="url(#tealGrad)"/>
+    <polygon points="-10,218 80,218 210,78 330,158 450,18 490,54 490,76 450,40 330,178 210,98 88,246 -10,246"
+      fill="url(#tealGrad)" opacity="0.4"/>
+
+    <g transform="translate(470, 48)">
+      <path d="M 0 -35 L 30.3 -17.5 L 30.3 17.5 L 0 35 L -30.3 17.5 L -30.3 -17.5 Z" fill="#ea580c" stroke="#fed7aa" stroke-width="1.5"/>
+      <path d="M 0 -35 L 0 0 M 30.3 -17.5 L 0 0 M 30.3 17.5 L 0 0 M 0 35 L 0 0 M -30.3 17.5 L 0 0 M -30.3 -17.5 L 0 0" stroke="#fff" stroke-width="0.5" opacity="0.7"/>
+      <circle cx="0" cy="0" r="8" fill="#fff" opacity="0.9">
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+
+    <g transform="translate(1150, 165)">
+      <text text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-weight="700" font-size="94" letter-spacing="-2.5">
+        <tspan fill="url(#orangeGrad)">Macro</tspan><tspan fill="url(#tealGrad)">Pad</tspan>
+      </text>
+      <rect x="-440" y="22" width="440" height="3" fill="#00BFD8" rx="1.5" opacity="0.6"/>
+      <text x="0" y="75" text-anchor="end"
+        font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+        font-size="28" font-weight="600" fill="#94a3b8" letter-spacing="3">
+        BUILD <tspan fill="#E8561A">v0.0.0</tspan>
+      </text>
+    </g>
+  </g>
+
+  <rect x="6" y="6" width="1188" height="268" fill="none" stroke="url(#frameGrad)" stroke-width="12" rx="10"/>
+  <rect x="12" y="12" width="1176" height="256" fill="none" stroke="#ffffff" stroke-width="1.5" rx="6" opacity="0.4"/>
+</svg>
