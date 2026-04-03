@@ -163,9 +163,12 @@ async fn trigger_macro_background(path: PathBuf, state: SharedState) {
         match macropad_core::load(&path) {
             Ok(rec) => {
                 let (_, abort_rx) = macropad_core::Player::new();
-                macropad_core::play(&rec, None, false, abort_rx, None)
-                    .await
-                    .map_err(|e| e.to_string())
+                tokio::task::spawn_blocking(move || {
+                    macropad_core::play(&rec, None, false, abort_rx, None)
+                })
+                .await
+                .map_err(|e| e.to_string())?
+                .map_err(|e| e.to_string())
             }
             Err(e) => Err(e.to_string()),
         }
