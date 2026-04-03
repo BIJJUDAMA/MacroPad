@@ -17,3 +17,4 @@ platform       = { path = "../platform" }
 script         = { path = "../script" }
 global-hotkey  = "0.6"
 toml           = "0.8"
+rdev           = "0.5"

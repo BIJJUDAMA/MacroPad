@@ -16,7 +16,6 @@ use global_hotkey::{
     hotkey::{HotKey, Modifiers, Code}
 };
 use platform::hotkey::Modifier;
-use rdev::Key;
 
 #[tokio::main]
 async fn main() {
