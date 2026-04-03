@@ -238,18 +238,14 @@ async fn handle_command(
 
             let state_clone = state.clone();
             std::thread::spawn(move || {
-                let rt = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("failed to build play runtime");
                 let (_player, abort_rx) = macropad_core::Player::new();
-                let result = rt.block_on(macropad_core::play(
+                let result = macropad_core::play(
                     &rec,
                     speed,
                     dry_run.unwrap_or(false),
                     abort_rx,
                     vars.as_ref(),
-                ));
+                );
                 let mut s = state_clone.lock().unwrap();
                 s.last_result = Some(result.is_ok());
                 s.set_idle();

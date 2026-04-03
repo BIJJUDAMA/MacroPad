@@ -167,8 +167,8 @@ async fn trigger_macro_background(path: PathBuf, state: SharedState) {
                     macropad_core::play(&rec, None, false, abort_rx, None)
                 })
                 .await
-                .map_err(|e| e.to_string())?
                 .map_err(|e| e.to_string())
+                .and_then(|res| res.map_err(|e| e.to_string()))
             }
             Err(e) => Err(e.to_string()),
         }
