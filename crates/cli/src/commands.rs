@@ -155,11 +155,7 @@ pub async fn cmd_list() -> Result<(), ClientError> {
             } else {
                 println!("[macropad] loaded macros:");
                 for item in items {
-                    println!(
-                        "  - {} ({})",
-                        item.path.display(),
-                        item.meta.name
-                    );
+                    println!("  - {} ({})", item.path.display(), item.meta.name);
                 }
             }
             Ok(())
