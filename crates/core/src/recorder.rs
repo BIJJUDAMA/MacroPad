@@ -31,7 +31,6 @@ impl Recorder {
             let mut last_x      = 0f64;
             let mut last_y      = 0f64;
             let mut last_move_t = 0u64;
-            let mut count       = 0u64;
 
             println!(">>DEBUG: macropad_core: Low-level capture thread started. Hooking OS events.");
             tracing::info!("macropad_core: Low-level capture thread started.");
@@ -39,7 +38,6 @@ impl Recorder {
             let callback = {
                 let event_tx = event_tx.clone();
                 move |rdev_event: rdev::Event| {
-                    count += 1;
                     let time_ms = start.elapsed().as_millis() as u64;
 
                     match &rdev_event.event_type {
@@ -75,7 +73,7 @@ impl Recorder {
                                 return;
                             }
                         }
-                        RdevEventType::KeyPress(_) | RdevEventType::KeyRelease(_) => {
+                        RdevEventType::KeyRelease(_) => {
                             if !opts.record_keyboard {
                                 return;
                             }
@@ -258,7 +256,6 @@ pub fn convert_event(e: rdev::Event, time_ms: u64) -> Option<Event> {
             value:       None,
             waypoints:   None,
         }),
-        _ => None,
     }
 }
 
