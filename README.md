@@ -32,7 +32,7 @@ To get there, the architecture splits into two independent processes: a backgrou
 3. **Record**: Click the **Record** button in the GUI, perform your sequence of keyboard/mouse actions, and click **Stop**.
 4. **Play**: Assign a Global Hotkey or simply click **Play** to replay your macro with microsecond precision.
 
----
+
 
 ---
 
@@ -42,7 +42,7 @@ MacroPad's architecture is built on **Process Isolation**. By separating the low
 
 For a deep dive into our OS hooks, display scaling, and IPC protocol, see the **[Architecture Overview](docs/ARCHITECTURE.md)**.
 
----
+
 
 
 ---
