@@ -17,65 +17,33 @@ Explore the high-fidelity design and programmable capabilities of Macropad:
 
 ---
 
-# Macropad
+# MacroPad
 
-Macropad is a desktop automation tool built around one constraint: the recording and playback must be exact. Not "close enough." Not "works most of the time." Exact.
+MacroPad is a desktop automation tool built around one constraint: the recording and playback must be exact. Not "close enough." Not "works most of the time." Exact.
 
-To get there, the architecture splits into two independent processes: a background daemon written in Rust that owns all event capture and playback, and a React/Tauri interface that handles configuration and state. The daemon runs whether the GUI is open or not. The GUI never touches a timing-critical path. This separation is the reason Macropad can make guarantees that general-purpose automation tools cannot.
-
----
-
-## How the Execution Engine Works
-
-Most automation tools operate at the application layer. They simulate input by asking the OS to inject events, but they start from above the point where hardware signals actually land. Macropad starts lower.
-
-**OS-Level Hardware Interception**
-
-The daemon hooks directly into the OS input stack at its lowest user-space layer. On Windows this uses `SetWindowsHookEx` with `WH_KEYBOARD_LL` and `WH_MOUSE_LL`. On macOS it goes through Quartz Event Services via `CGEventTapCreate`. On Linux it reads from the `evdev` interface. These are the same hooks the OS itself uses to route input before any application sees it.
-
-The practical result: events cannot be "missed" by a polling cycle, and playback is indistinguishable from physical input. Privileged and isolated environments that reject simulated input at the application layer still accept it here.
-
-**Visual Node Editor**
-Recordings are stored as structured event trees, not flat keystroke logs. The React GUI lets you edit that tree directly: change how long a key is held in milliseconds, adjust a mouse path's bezier curve, add conditional delays, insert logic branches. None of this requires touching the underlying file format by hand.
-
-**Centralized Asset Library**
-Manage hundreds of macros through a clean, searchable interface. Tag automations by project, sort by execution frequency, and instantly sync changes back to the daemon without restarting the engine.
-
-**Intelligent Display Scaling**
-Record a macro on a 4K desktop, play it back on a 1080p laptop. Macropad embeds the native display resolution into the recording and dynamically scales absolute mouse coordinates at runtime to guarantee the cursor hits the exact same relative targets.
-
-**Dynamic Macro Scripting (Coming Soon)**
-When static recording isn't enough, switch to Macropad Script (`.mps`). Evaluate screen pixels in real-time, generate randomized keystroke delays to simulate human typing cadence, and programmatically loop through smaller "component macros" to build massive, conditional workflows.
-
-**Global Hotkey Routing (Coming Soon)**
-
-The daemon maintains a dedicated listening thread for hotkey chords. When a chord fires, for example `Ctrl+Shift+Alt+F12`, playback starts immediately regardless of which application has focus, what the system load is, or whether the GUI is running at all. The listening thread does not share a queue with the execution engine.
-
-**Input Consolidation**
-
-Raw OS recording generates thousands of micro-movement events per second. The recording engine merges adjacent, functionally identical path segments into optimized vectors in real time. The resulting files are significantly smaller, and playback is smoother than a naive frame-by-frame replay because micro-jitter is removed at the source.
-
-**Playback Overrides**
-
-Speed, loop count, and coordinate offsets can be set globally at runtime, applied uniformly across all nodes in a recording without editing the file itself.
+To get there, the architecture splits into two independent processes: a background daemon written in Rust that owns all event capture and playback, and a React/Tauri interface that handles configuration and state. The daemon runs whether the GUI is open or not. The GUI never touches a timing-critical path. This separation is the reason MacroPad can make guarantees that general-purpose automation tools cannot.
 
 ---
 
-## Architecture
+## Quick Start
 
-**The Rust Daemon (`macropad-daemon`)**
+1. **Download**: Grab the latest installer for your OS from the [Releases](../../releases) page.
+2. **Launch**: Open MacroPad. The background daemon will initialize automatically in your system tray.
+3. **Record**: Click the **Record** button in the GUI, perform your sequence of keyboard/mouse actions, and click **Stop**.
+4. **Play**: Assign a Global Hotkey or simply click **Play** to replay your macro with microsecond precision.
 
-This is the actual engine. It runs as a standalone binary in the background and handles everything timing-sensitive.
+---
 
-It uses `tokio` for its async runtime, running global hotkey listening, IPC message polling, and macro execution state machines as concurrent tasks on separate threads. Nothing blocks.
+---
 
-IPC with the frontend uses native OS channels exclusively: Named Pipes on Windows, Unix Domain Sockets on macOS and Linux. This avoids the network stack entirely and keeps latency at the OS level.
+## Architecture at a Glance
 
-**The React Interface (`macropad-gui`)**
+MacroPad's architecture is built on **Process Isolation**. By separating the low-level event interception (Rust Daemon) from the user interface (React GUI), the system achieves hardware-level precision.
 
-The GUI is a visual representation of the daemon's state, not a controller of it. It renders using the host's native webview (WebView2 on Windows, WebKit on macOS/Linux) so UI work stays off the threads the daemon needs for event capture.
+For a deep dive into our OS hooks, display scaling, and IPC protocol, see the **[Architecture Overview](docs/ARCHITECTURE.md)**.
 
-From the GUI you can manage your `.mpr` recording library, edit macro event trees, and issue commands (Record, Stop, Play, Abort) that serialize over the local IPC socket to the daemon.
+---
+
 
 ---
 
@@ -85,7 +53,12 @@ Both formats are plaintext, human-readable, and work cleanly with version contro
 
 ### <img src="docs/assets/mpr_icon.png" width="24" align="center"> The MPR Format (`.mpr`)
 
-An `.mpr` file is a validated JSON document representing a chronological sequence of hardware events. It has three sections:
+An `.mpr` file is a validated JSON document representing a chronological sequence of hardware events.
+
+<details>
+<summary><b>View Technical Specification</b></summary>
+
+It consists of three primary sections:
 
 - **Header:** Semantic version for backwards compatibility, ISO 8601 timestamps, author fields, and user-defined tags for organizing large libraries.
 - **Config:** The display resolution at recording time, loop thresholds, and playback speed multiplier. If you run an `.mpr` on a different display resolution, the daemon detects the mismatch and scales absolute mouse coordinates via ratio matrices automatically.
@@ -94,11 +67,19 @@ An `.mpr` file is a validated JSON document representing a chronological sequenc
   - `MouseNode`: Absolute X,Y coordinates, button state (`LeftDown`, `RightUp`, `Extra1`), and scroll wheel delta.
   - `KeyNode`: Virtual Key Code or Scancode, with explicit state (`Press`, `Hold`, `Release`) for accurate chord and modifier recreation.
 
-### <img src="docs/assets/mps_icon.png" width="24" align="center"> The MPS Format (`.mps`)
+</details>
 
-`.mps` is where Macropad stops being a recorder and becomes a programmable automation engine. An `.mps` file is a script interpreted directly by the Rust daemon's execution engine. It is Turing-complete.
+### <img src="docs/assets/mps_icon.png" width="24" align="center"> The MPS Format (`.mps`) (Coming Soon)
 
-What this unlocks in practice:
+> [!CAUTION]
+> **ROADMAP FEATURE**: The `.mps` engine is currently in the late stages of development. Native playback is supported via the CLI, but GUI-based orchestration and debugging are locked in the current release.
+
+`.mps` is where MacroPad stops being a recorder and becomes a programmable automation engine.
+
+<details>
+<summary><b>View Scripting Engine Capabilities</b></summary>
+
+An `.mps` file is a script interpreted directly by the Rust daemon's execution engine. It is Turing-complete. What this unlocks in practice:
 
 - **Control flow:** Standard `for`/`while` loops, `if/else` branching on environment variables, polling loops that wait for a specific pixel color to appear before continuing.
 - **Dynamic input:** Variables, arithmetic, and runtime-generated input arguments. You can randomize delay intervals between keystrokes to produce human-level timing variance, or calculate mouse targets relative to the active window's current dimensions rather than against fixed coordinates.
@@ -106,6 +87,8 @@ What this unlocks in practice:
 - **Sequential Execution:** By default, the `run` command blocks script execution until the daemon finishes playing the target macro. This ensures predictable timing in loops and prevents "daemon is busy" synchronization errors.
 - **Platform-native Lexing:** The script lexer is optimized for Windows environments, supporting raw string paths (`r"C:\..."`) and standard file system conventions for robust cross-directory automation.
 - **Direct execution:** When the daemon receives an `.mps` execution command via hotkey, it compiles the script to an AST in memory and runs it. The GUI is not involved. This is the fastest execution path.
+
+</details>
 
 ---
 
@@ -115,9 +98,9 @@ Macropad compiles to native machine code for each target. There is no JVM, no Py
 
 The CI pipeline produces native installers for:
 
-- **Windows 10/11:** `.msi` and `.exe`
-- **macOS:** Universal `.dmg` supporting both Apple Silicon (M-series) and Intel
-- **Linux:** AppImage and `.deb`, with support for both Wayland and X11
+- **Windows (x64):** `.msi` and `.exe` (Setup)
+- **macOS (Universal):** `.dmg` and `.app.tar.gz` (Apple Silicon & Intel)
+- **Linux (x86_64, aarch64):** `.AppImage`, `.deb`, and `.rpm`
 
 The daemon binary ships inside the Tauri installation directory and communicates over OS-native IPC sockets. The behavior is identical across platforms.
 

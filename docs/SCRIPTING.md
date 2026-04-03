@@ -1,9 +1,9 @@
-# Macropad Scripting Guide (`.mps`)
+# MacroPad Scripting Guide (`.mps`)
 
 > [!CAUTION]
 > **WORK IN PROGRESS**: The scripting engine and `.mps` format are currently under active development. Some features described below may be partially implemented or unavailable in the current release.
 
-Macropad Script (`.mps`) elevates simple recordings into dynamic automation workflows. The scripting engine is built for reliability, providing Turing-complete logic without the overhead of a full general-purpose runtime.
+MacroPad Script (`.mps`) elevates simple recordings into dynamic automation workflows. The scripting engine is built for reliability, providing Turing-complete logic without the overhead of a full general-purpose runtime.
 
 ---
 
@@ -87,4 +87,4 @@ The following variables are available by default in every script:
 
 ## Testing and Verification
 
-Macropad includes a dedicated integration test suite to verify script logic. See the `tests/` directory for examples of automated verification for variable scoping and control flow.
+MacroPad includes a dedicated integration test suite to verify script logic. See the `tests/` directory for examples of automated verification for variable scoping and control flow.
