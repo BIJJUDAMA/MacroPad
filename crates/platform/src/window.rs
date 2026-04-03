@@ -57,6 +57,25 @@ pub async fn wait_for_window(query: WindowQuery) -> Result<(), WindowError> {
     }
 }
 
+pub fn wait_for_window_sync(query: WindowQuery) -> Result<(), WindowError> {
+    let start = Instant::now();
+    let timeout = Duration::from_millis(query.timeout_ms);
+    let interval = Duration::from_millis(query.interval_ms);
+
+    loop {
+        if start.elapsed() >= timeout {
+            return Err(WindowError::Timeout(query.title.clone()));
+        }
+
+        if window_exists(&query.title, query.use_regex)? {
+            activate_window(&query.title, query.use_regex)?;
+            return Ok(());
+        }
+
+        std::thread::sleep(interval);
+    }
+}
+
 #[cfg(windows)]
 fn window_exists(title: &str, use_regex: bool) -> Result<bool, WindowError> {
     use std::ffi::OsStr;
