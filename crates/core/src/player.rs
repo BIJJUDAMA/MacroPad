@@ -164,7 +164,16 @@ pub async fn play(
             }
 
             if let Some(ref mut enigo) = enigo {
-                execute_event(enigo, event, scale, rec_w, rec_h, cur_w, cur_h, speed, vars).await?;
+                let ctx = PlaybackContext {
+                    scale,
+                    rec_w,
+                    rec_h,
+                    cur_w,
+                    cur_h,
+                    speed,
+                    vars,
+                };
+                execute_event(enigo, event, ctx).await?;
             }
         }
     }
@@ -188,27 +197,31 @@ fn resolve_var(s: &str, vars: Option<&HashMap<String, String>>) -> String {
     result
 }
 
-async fn execute_event(
-    enigo: &mut Enigo,
-    event: &Event,
+struct PlaybackContext<'a> {
     scale: bool,
     rec_w: u32,
     rec_h: u32,
     cur_w: u32,
     cur_h: u32,
     speed: f64,
-    vars: Option<&HashMap<String, String>>,
+    vars: Option<&'a HashMap<String, String>>,
+}
+
+async fn execute_event(
+    enigo: &mut Enigo,
+    event: &Event,
+    ctx: PlaybackContext<'_>,
 ) -> Result<(), PlayerError> {
     let sx = |v: i32| {
-        if scale {
-            scale_coord(v, rec_w, cur_w)
+        if ctx.scale {
+            scale_coord(v, ctx.rec_w, ctx.cur_w)
         } else {
             v
         }
     };
     let sy = |v: i32| {
-        if scale {
-            scale_coord(v, rec_h, cur_h)
+        if ctx.scale {
+            scale_coord(v, ctx.rec_h, ctx.cur_h)
         } else {
             v
         }
@@ -217,14 +230,14 @@ async fn execute_event(
     match event.event_type {
         EventType::KeyDown => {
             let raw = event.key.as_deref().unwrap_or("");
-            let resolved = resolve_var(raw, vars);
+            let resolved = resolve_var(raw, ctx.vars);
             let key = parse_key(&resolved)?;
             let _ = enigo.key(key, Direction::Press);
         }
 
         EventType::KeyUp => {
             let raw = event.key.as_deref().unwrap_or("");
-            let resolved = resolve_var(raw, vars);
+            let resolved = resolve_var(raw, ctx.vars);
             let key = parse_key(&resolved)?;
             let _ = enigo.key(key, Direction::Release);
         }
@@ -250,7 +263,7 @@ async fn execute_event(
             let from_y = sy(event.y.unwrap_or(0));
             let to_x = sx(event.delta_x.unwrap_or(0) as i32);
             let to_y = sy(event.delta_y.unwrap_or(0) as i32);
-            let dur_ms = (event.duration_ms.unwrap_or(100) as f64 / speed) as u64;
+            let dur_ms = (event.duration_ms.unwrap_or(100) as f64 / ctx.speed) as u64;
 
             if let Some(ref waypoints) = event.waypoints {
                 if waypoints.len() >= 2 {
@@ -317,7 +330,7 @@ async fn execute_event(
 
         EventType::TypeText => {
             if let Some(ref text) = event.value {
-                let resolved = resolve_var(text, vars);
+                let resolved = resolve_var(text, ctx.vars);
                 let _ = enigo.text(&resolved);
             }
         }
