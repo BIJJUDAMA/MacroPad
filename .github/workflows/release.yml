@@ -119,7 +119,7 @@ jobs:
           tagName: ${{ steps.version.outputs.tag }}
           releaseName: "${{ steps.version.outputs.version }} - ${{ steps.version.outputs.release_type }}"
           releaseBody: |
-            ![Macropad Banner](https://raw.githubusercontent.com/${{ github.repository }}/main/docs/assets/banner.svg)
+            ![Macropad Banner](https://github.com/${{ github.repository }}/raw/main/docs/assets/banner.svg)
 
             ${{ steps.notes.outputs.notes }}
 
