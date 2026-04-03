@@ -882,6 +882,7 @@ dependencies = [
  "macropad-core",
  "macropad-ipc",
  "platform",
+ "rdev",
  "script",
  "serde",
  "serde_json",
