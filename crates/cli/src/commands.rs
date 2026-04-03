@@ -143,14 +143,23 @@ pub async fn cmd_stop_playback() -> Result<(), ClientError> {
 }
 
 pub async fn cmd_list() -> Result<(), ClientError> {
-    match send_command(IpcCommand::ListMacros).await? {
-        IpcResponse::Macros { names } => {
-            if names.is_empty() {
+    match send_command(IpcCommand::ListMacros {
+        mpr_paths: vec![],
+        mps_paths: vec![],
+    })
+    .await?
+    {
+        IpcResponse::Macros { items } => {
+            if items.is_empty() {
                 println!("[macropad] no macros loaded");
             } else {
                 println!("[macropad] loaded macros:");
-                for name in names {
-                    println!("  - {}", name);
+                for item in items {
+                    println!(
+                        "  - {} ({})",
+                        item.path.display(),
+                        item.meta.name
+                    );
                 }
             }
             Ok(())

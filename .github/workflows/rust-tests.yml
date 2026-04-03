@@ -12,10 +12,21 @@ env:
 jobs:
   test:
     name: Run Tests
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
     steps:
     - uses: actions/checkout@v4
     
+    - name: Install System Dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
@@ -23,6 +34,15 @@ jobs:
 
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
+
+    - name: Build Sidecar (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: ./scripts/build-sidecar.ps1
+
+    - name: Build Sidecar (Unix)
+      if: matrix.os != 'windows-latest'
+      run: chmod +x ./scripts/build-sidecar.sh && ./scripts/build-sidecar.sh
 
     - name: Check formatting
       run: cargo fmt --all -- --check
