@@ -83,8 +83,6 @@ jobs:
         shell: bash
         run: |
           NOTES=$(awk '/^## ✨ Key Features/{found=1; next} found && /^##/{exit} found{print}' "$GITHUB_WORKSPACE/README.md")
-          if [ -z "$NOTES" ]; then NOTES="See README for details."; fi
-
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES"     >> $GITHUB_OUTPUT
           echo "EOF"        >> $GITHUB_OUTPUT
@@ -117,18 +115,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ steps.version.outputs.tag }}
-          releaseName: "${{ steps.version.outputs.version }} - ${{ steps.version.outputs.release_type }}"
+          releaseName: ${{ steps.version.outputs.version }}
           releaseBody: |
             ![Macropad Banner](https://github.com/${{ github.repository }}/raw/main/docs/assets/banner.svg)
 
             ${{ steps.notes.outputs.notes }}
 
-            ---
-            Version: ${{ steps.version.outputs.version }}
-            Type: ${{ steps.version.outputs.release_type }}
-            README: https://github.com/${{ github.repository }}/blob/main/README.md
-            Docs: https://github.com/${{ github.repository }}/tree/main/docs
-            ${{ steps.version.outputs.is_initial == 'false' && format('Full Changelog: https://github.com/{0}/blob/main/CHANGELOG.md', github.repository) || '' }}
+            <br />
+
+            **Version**: ${{ steps.version.outputs.version }}
+
+            [![README](https://img.shields.io/badge/README-00BFD8?style=for-the-badge&logo=readme&logoColor=white)](https://github.com/${{ github.repository }}/blob/main/README.md) [![Documentation](https://img.shields.io/badge/Documentation-E8561A?style=for-the-badge&logo=bookstack&logoColor=white)](https://github.com/${{ github.repository }}/tree/main/docs) ${{ steps.version.outputs.is_initial == 'false' && format('[![Changelog](https://img.shields.io/badge/Changelog-5A6A7A?style=for-the-badge&logo=github&logoColor=white)](https://github.com/{0}/blob/main/CHANGELOG.md)', github.repository) || '' }}
           releaseDraft: false
           prerelease: false
           projectPath: gui
