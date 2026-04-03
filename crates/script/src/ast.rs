@@ -6,31 +6,31 @@ pub struct Script {
 #[derive(Debug, Clone)]
 pub enum Statement {
     Let {
-        name:  String,
+        name: String,
         value: Expr,
     },
     Run {
-        path:    Expr,
-        args:    Vec<RunArg>,
+        path: Expr,
+        args: Vec<RunArg>,
         is_async: bool,
     },
     If {
-        condition:  Condition,
-        body:       Vec<Statement>,
+        condition: Condition,
+        body: Vec<Statement>,
         elif_branches: Vec<ElifBranch>,
-        else_body:  Option<Vec<Statement>>,
+        else_body: Option<Vec<Statement>>,
     },
     Loop {
         count: u32,
-        body:  Vec<Statement>,
+        body: Vec<Statement>,
     },
     LoopWhile {
         condition: Condition,
-        body:      Vec<Statement>,
-        max_iter:  Option<u32>,
+        body: Vec<Statement>,
+        max_iter: Option<u32>,
     },
     WaitFor {
-        condition:  Condition,
+        condition: Condition,
         timeout_ms: u64,
     },
     Delay {
@@ -41,12 +41,12 @@ pub enum Statement {
 #[derive(Debug, Clone)]
 pub struct ElifBranch {
     pub condition: Condition,
-    pub body:      Vec<Statement>,
+    pub body: Vec<Statement>,
 }
 
 #[derive(Debug, Clone)]
 pub struct RunArg {
-    pub key:   String,
+    pub key: String,
     pub value: Expr,
 }
 
@@ -69,13 +69,13 @@ pub enum InterpolatedPart {
 #[derive(Debug, Clone)]
 pub enum Condition {
     Window {
-        title:     Expr,
+        title: Expr,
         use_regex: bool,
     },
     Pixel {
-        x:         i32,
-        y:         i32,
-        hex:       String,
+        x: i32,
+        y: i32,
+        hex: String,
         tolerance: u32,
     },
     MacroOk,

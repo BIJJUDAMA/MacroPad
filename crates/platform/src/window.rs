@@ -11,8 +11,8 @@ pub enum WindowError {
 }
 
 pub struct WindowQuery {
-    pub title:      String,
-    pub use_regex:  bool,
+    pub title: String,
+    pub use_regex: bool,
     pub timeout_ms: u64,
     pub interval_ms: u64,
 }
@@ -20,9 +20,9 @@ pub struct WindowQuery {
 impl WindowQuery {
     pub fn new(title: &str) -> Self {
         Self {
-            title:       title.into(),
-            use_regex:   false,
-            timeout_ms:  15000,
+            title: title.into(),
+            use_regex: false,
+            timeout_ms: 15000,
             interval_ms: 500,
         }
     }
@@ -201,10 +201,7 @@ fn activate_window(title: &str, _use_regex: bool) -> Result<(), WindowError> {
 
 #[cfg(target_os = "macos")]
 fn activate_window(title: &str, _use_regex: bool) -> Result<(), WindowError> {
-    let script = format!(
-        "tell application \"{}\" to activate",
-        title
-    );
+    let script = format!("tell application \"{}\" to activate", title);
     let _ = std::process::Command::new("osascript")
         .arg("-e")
         .arg(&script)
@@ -222,7 +219,9 @@ struct SimpleRegex {
 #[cfg(any(windows, target_os = "linux"))]
 impl SimpleRegex {
     fn new(pattern: &str) -> Result<Self, String> {
-        Ok(Self { pattern: pattern.into() })
+        Ok(Self {
+            pattern: pattern.into(),
+        })
     }
 
     fn is_match(&self, text: &str) -> bool {
@@ -246,6 +245,5 @@ impl SimpleRegex {
 
 #[cfg(any(windows, target_os = "linux"))]
 fn regex_lite(pattern: &str) -> Result<SimpleRegex, WindowError> {
-    SimpleRegex::new(pattern)
-        .map_err(|e| WindowError::Platform(format!("invalid regex: {}", e)))
+    SimpleRegex::new(pattern).map_err(|e| WindowError::Platform(format!("invalid regex: {}", e)))
 }

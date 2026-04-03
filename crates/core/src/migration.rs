@@ -41,9 +41,9 @@ fn migrate_v0_to_v1(raw: &mut Value) -> Result<(), MigrationError> {
             .ok_or_else(|| MigrationError::StepFailed(0, 1, "root is not a table".into()))?;
 
         let mut playback = toml::map::Map::new();
-        playback.insert("speed".into(),           Value::Float(1.0));
+        playback.insert("speed".into(), Value::Float(1.0));
         playback.insert("wait_timeout_ms".into(), Value::Integer(15000));
-        playback.insert("loop_count".into(),      Value::Integer(1));
+        playback.insert("loop_count".into(), Value::Integer(1));
 
         meta.insert("playback".into(), Value::Table(playback));
     }

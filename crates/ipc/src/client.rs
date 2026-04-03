@@ -49,7 +49,7 @@ impl IpcClient {
         {
             self.pipe.write_all(json.as_bytes()).await?;
             let mut reader = BufReader::new(&mut self.pipe);
-            let mut line   = String::new();
+            let mut line = String::new();
             reader.read_line(&mut line).await?;
             let response: IpcResponse = serde_json::from_str(line.trim())?;
             Ok(response)
@@ -60,7 +60,7 @@ impl IpcClient {
             let (reader, mut writer) = self.stream.split();
             writer.write_all(json.as_bytes()).await?;
             let mut reader = BufReader::new(reader);
-            let mut line   = String::new();
+            let mut line = String::new();
             reader.read_line(&mut line).await?;
             let response: IpcResponse = serde_json::from_str(line.trim())?;
             Ok(response)

@@ -4,12 +4,12 @@ pub mod parser;
 pub mod runner;
 pub mod variables;
 
-use parser::{ParseError, Parser};
 use lexer::Lexer;
+use parser::{ParseError, Parser};
 use runner::{Runner, RunnerError};
-use variables::Scope;
 use std::path::Path;
 use thiserror::Error;
+use variables::Scope;
 
 #[derive(Debug, Error)]
 pub enum ScriptError {
@@ -26,13 +26,13 @@ pub async fn run_script(
     dry_run: bool,
     vars: Option<std::collections::HashMap<String, String>>,
 ) -> Result<(), ScriptError> {
-    let source  = std::fs::read_to_string(path)?;
-    let mut lexer  = Lexer::new(&source);
-    let tokens  = lexer.tokenize().map_err(ParseError::Lex)?;
+    let source = std::fs::read_to_string(path)?;
+    let mut lexer = Lexer::new(&source);
+    let tokens = lexer.tokenize().map_err(ParseError::Lex)?;
     let mut parser = Parser::new(tokens);
-    let script  = parser.parse()?;
-    let runner  = Runner::new(path, dry_run);
-    let mut scope  = Scope::new();
+    let script = parser.parse()?;
+    let runner = Runner::new(path, dry_run);
+    let mut scope = Scope::new();
 
     if let Some(map) = vars {
         for (k, v) in map {

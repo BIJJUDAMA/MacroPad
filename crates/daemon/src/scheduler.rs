@@ -1,14 +1,14 @@
 use crate::state::SharedState;
 use chrono::{Local, Timelike};
+use script::run_script;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::time::{sleep, Duration};
-use tracing::{info, error, warn, debug};
-use script::run_script;
+use tracing::{debug, error, info, warn};
 
-use macropad_ipc::{ScheduledTask, Schedule};
+use macropad_ipc::{Schedule, ScheduledTask};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct ScheduleStore {
@@ -16,19 +16,15 @@ struct ScheduleStore {
 }
 
 pub struct Scheduler {
-    tasks:  Arc<Mutex<HashMap<String, ScheduledTask>>>,
-    state:  SharedState,
-    path:   PathBuf,
+    tasks: Arc<Mutex<HashMap<String, ScheduledTask>>>,
+    state: SharedState,
+    path: PathBuf,
 }
 
 impl Scheduler {
     pub fn new(state: SharedState, path: PathBuf) -> Self {
         let tasks = Arc::new(Mutex::new(HashMap::new()));
-        let mut s = Self {
-            tasks,
-            state,
-            path,
-        };
+        let mut s = Self { tasks, state, path };
         if let Err(e) = s.load() {
             warn!("failed to load schedule: {}", e);
         }
@@ -95,9 +91,9 @@ impl Scheduler {
             info!("scheduler service started");
             loop {
                 let now = Local::now();
-                let current_hour   = now.hour();
+                let current_hour = now.hour();
                 let current_minute = now.minute();
-                let current_secs   = now.timestamp() as u64;
+                let current_secs = now.timestamp() as u64;
 
                 let task_list: Vec<ScheduledTask> = {
                     let locked = tasks.lock().unwrap();
@@ -111,18 +107,16 @@ impl Scheduler {
 
                     let should_run = match &task.schedule {
                         Schedule::Once { at_hour, at_minute } => {
-                            current_hour   == *at_hour
-                            && current_minute == *at_minute
-                            && now.second() == 0
+                            current_hour == *at_hour
+                                && current_minute == *at_minute
+                                && now.second() == 0
                         }
                         Schedule::Daily { at_hour, at_minute } => {
-                            current_hour   == *at_hour
-                            && current_minute == *at_minute
-                            && now.second() == 0
+                            current_hour == *at_hour
+                                && current_minute == *at_minute
+                                && now.second() == 0
                         }
-                        Schedule::Interval { every_secs } => {
-                            current_secs % every_secs == 0
-                        }
+                        Schedule::Interval { every_secs } => current_secs % every_secs == 0,
                     };
 
                     if should_run {
@@ -166,12 +160,16 @@ async fn run_macro_task_background(path: PathBuf, state: SharedState) {
     let is_script = path.extension().map_or(false, |e| e == "mps");
 
     let result = if is_script {
-        run_script(&path, false, None).await.map_err(|e| e.to_string())
+        run_script(&path, false, None)
+            .await
+            .map_err(|e| e.to_string())
     } else {
         match macropad_core::load(&path) {
             Ok(rec) => {
                 let (_player, abort_rx) = macropad_core::Player::new();
-                macropad_core::play(&rec, None, false, abort_rx, None).await.map_err(|e| e.to_string())
+                macropad_core::play(&rec, None, false, abort_rx, None)
+                    .await
+                    .map_err(|e| e.to_string())
             }
             Err(e) => Err(e.to_string()),
         }
@@ -184,7 +182,7 @@ async fn run_macro_task_background(path: PathBuf, state: SharedState) {
     }
 
     match result {
-        Ok(_)  => info!("scheduled task '{}' completed successfully", name),
+        Ok(_) => info!("scheduled task '{}' completed successfully", name),
         Err(e) => error!("scheduled task '{}' failed: {}", name, e),
     }
 }

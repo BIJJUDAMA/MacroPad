@@ -1,20 +1,22 @@
-use macropad_core::models::{Metadata, OriginType};
-use std::path::Path;
-use std::fs;
 use chrono::Local;
+use macropad_core::models::{Metadata, OriginType};
+use std::fs;
+use std::path::Path;
 
 pub fn scan_script(path: &Path) -> Metadata {
     let content = fs::read_to_string(path).unwrap_or_default();
     let lines: Vec<&str> = content.lines().collect();
-    
-    let mut name = path.file_stem()
+
+    let mut name = path
+        .file_stem()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "unnamed".into());
     let mut tags = Vec::new();
     let mut command_count = 0;
-    
+
     // Simple Docblock parsing
-    for line in lines.iter().take(20) { // Only look at first 20 lines for metadata
+    for line in lines.iter().take(20) {
+        // Only look at first 20 lines for metadata
         let trimmed = line.trim();
         if trimmed.starts_with("// @name:") {
             if let Some(val) = trimmed.splitn(2, ':').nth(1) {
@@ -24,7 +26,8 @@ pub fn scan_script(path: &Path) -> Metadata {
             if let Some(val) = trimmed.splitn(2, ':').nth(1) {
                 // Expecting ["a", "b"]
                 let cleaned = val.trim().trim_matches(|c| c == '[' || c == ']');
-                tags = cleaned.split(',')
+                tags = cleaned
+                    .split(',')
                     .map(|s| s.trim().trim_matches('"').to_string())
                     .filter(|s| !s.is_empty())
                     .collect();
@@ -41,9 +44,9 @@ pub fn scan_script(path: &Path) -> Metadata {
     }
 
     Metadata {
-        version:       1,
+        version: 1,
         name,
-        created:       fs::metadata(path)
+        created: fs::metadata(path)
             .and_then(|m| m.created())
             .map(|t| {
                 let dt: chrono::DateTime<Local> = t.into();
@@ -51,9 +54,9 @@ pub fn scan_script(path: &Path) -> Metadata {
             })
             .unwrap_or_else(|_| Local::now().date_naive()),
         tags,
-        requires:      Vec::new(),
-        origin_type:   OriginType::Script,
-        line_count:    Some(lines.len() as u32),
+        requires: Vec::new(),
+        origin_type: OriginType::Script,
+        line_count: Some(lines.len() as u32),
         command_count: Some(command_count),
     }
 }

@@ -15,9 +15,9 @@ fn main() {
         std::process::exit(1);
     }
 
-    let new_binary     = PathBuf::from(&args[1]);
-    let target_binary  = PathBuf::from(&args[2]);
-    let relaunch       = PathBuf::from(&args[3]);
+    let new_binary = PathBuf::from(&args[1]);
+    let target_binary = PathBuf::from(&args[2]);
+    let relaunch = PathBuf::from(&args[3]);
 
     // wait for the main process to release the file lock
     println!("[launcher] waiting for process to exit...");
@@ -37,7 +37,10 @@ fn main() {
                     eprintln!("[launcher] swap failed after 10 attempts: {}", e);
                     std::process::exit(1);
                 }
-                eprintln!("[launcher] swap attempt {} failed: {} — retrying", attempts, e);
+                eprintln!(
+                    "[launcher] swap attempt {} failed: {} — retrying",
+                    attempts, e
+                );
                 thread::sleep(Duration::from_millis(500));
             }
         }
@@ -49,7 +52,7 @@ fn main() {
     // relaunch the updated binary
     println!("[launcher] relaunching: {}", relaunch.display());
     match Command::new(&relaunch).spawn() {
-        Ok(_)  => println!("[launcher] relaunch ok"),
+        Ok(_) => println!("[launcher] relaunch ok"),
         Err(e) => eprintln!("[launcher] relaunch failed: {}", e),
     }
 }

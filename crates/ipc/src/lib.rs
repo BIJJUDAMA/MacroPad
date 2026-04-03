@@ -1,36 +1,28 @@
 pub mod client;
 
+use chrono::{DateTime, Local};
+use macropad_core::models::RecordingOptions;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use macropad_core::models::RecordingOptions;
 use thiserror::Error;
-use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduledTask {
-    pub id:          String,
-    pub name:        String,
-    pub macro_path:  PathBuf,
-    pub schedule:    Schedule,
-    pub enabled:     bool,
-    pub last_run:    Option<DateTime<Local>>,
+    pub id: String,
+    pub name: String,
+    pub macro_path: PathBuf,
+    pub schedule: Schedule,
+    pub enabled: bool,
+    pub last_run: Option<DateTime<Local>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Schedule {
-    Once {
-        at_hour:   u32,
-        at_minute: u32,
-    },
-    Interval {
-        every_secs: u64,
-    },
-    Daily {
-        at_hour:   u32,
-        at_minute: u32,
-    },
+    Once { at_hour: u32, at_minute: u32 },
+    Interval { every_secs: u64 },
+    Daily { at_hour: u32, at_minute: u32 },
 }
 
 #[cfg(windows)]
@@ -55,12 +47,12 @@ pub enum IpcError {
 /// on top of the `.mpr` file's baked-in `PlaybackConfig`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PlaybackOverrides {
-    pub speed:            Option<f64>,
-    pub loop_count:       Option<u32>,
-    pub skip_mouse_move:  Option<bool>,
+    pub speed: Option<f64>,
+    pub loop_count: Option<u32>,
+    pub skip_mouse_move: Option<bool>,
     pub scale_to_current: Option<bool>,
-    pub wait_for_window:  Option<String>,
-    pub wait_timeout_ms:  Option<u64>,
+    pub wait_for_window: Option<String>,
+    pub wait_timeout_ms: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -68,12 +60,12 @@ pub struct PlaybackOverrides {
 pub enum IpcCommand {
     #[serde(rename = "play", alias = "PLAY")]
     Play {
-        path:      PathBuf,
-        speed:     Option<f64>,
-        dry_run:   Option<bool>,
+        path: PathBuf,
+        speed: Option<f64>,
+        dry_run: Option<bool>,
         /// Runtime variables to inject into event fields.
         #[serde(default)]
-        vars:      Option<HashMap<String, String>>,
+        vars: Option<HashMap<String, String>>,
         /// Per-call overrides on top of the file's PlaybackConfig.
         #[serde(default)]
         overrides: Option<PlaybackOverrides>,
@@ -81,7 +73,7 @@ pub enum IpcCommand {
     #[serde(rename = "record", alias = "RECORD")]
     Record {
         output_path: PathBuf,
-        options:     Option<RecordingOptions>,
+        options: Option<RecordingOptions>,
     },
     #[serde(rename = "stop_record", alias = "STOP_RECORD")]
     StopRecord,
@@ -90,7 +82,7 @@ pub enum IpcCommand {
     #[serde(rename = "status", alias = "STATUS")]
     Status,
     #[serde(rename = "list_macros", alias = "LIST_MACROS")]
-    ListMacros { 
+    ListMacros {
         mpr_paths: Vec<PathBuf>,
         mps_paths: Vec<PathBuf>,
     },
@@ -98,19 +90,15 @@ pub enum IpcCommand {
     Ping,
     #[serde(rename = "set_hotkey", alias = "SET_HOTKEY")]
     SetHotkey {
-        macro_path:  PathBuf,
-        hotkey_str:  String,
+        macro_path: PathBuf,
+        hotkey_str: String,
     },
     #[serde(rename = "get_hotkeys", alias = "GET_HOTKEYS")]
     GetHotkeys,
     #[serde(rename = "add_scheduled_task", alias = "ADD_SCHEDULED_TASK")]
-    AddScheduledTask {
-        task: ScheduledTask,
-    },
+    AddScheduledTask { task: ScheduledTask },
     #[serde(rename = "remove_scheduled_task", alias = "REMOVE_SCHEDULED_TASK")]
-    RemoveScheduledTask {
-        id: String,
-    },
+    RemoveScheduledTask { id: String },
     #[serde(rename = "get_scheduled_tasks", alias = "GET_SCHEDULED_TASKS")]
     GetScheduledTasks,
 }
@@ -126,9 +114,20 @@ pub struct MacroItem {
 pub enum IpcResponse {
     Ok,
     Pong,
-    Error  { message: String },
-    Status { status: String, last_result: Option<bool> },
-    Macros { items: Vec<MacroItem> },
-    Hotkeys { bindings: HashMap<String, String> },
-    ScheduledTasks { tasks: Vec<ScheduledTask> },
+    Error {
+        message: String,
+    },
+    Status {
+        status: String,
+        last_result: Option<bool>,
+    },
+    Macros {
+        items: Vec<MacroItem>,
+    },
+    Hotkeys {
+        bindings: HashMap<String, String>,
+    },
+    ScheduledTasks {
+        tasks: Vec<ScheduledTask>,
+    },
 }

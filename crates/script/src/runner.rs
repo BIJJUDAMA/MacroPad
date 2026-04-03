@@ -1,7 +1,7 @@
 use crate::ast::*;
 use crate::variables::Scope;
-use macropad_ipc::{IpcCommand, IpcResponse, PlaybackOverrides};
 use macropad_ipc::client::{send_command, ClientError};
+use macropad_ipc::{IpcCommand, IpcResponse, PlaybackOverrides};
 use platform::screenshot::{PixelChecker, Rgba};
 use platform::window::{wait_for_window, WindowQuery};
 use std::path::{Path, PathBuf};
@@ -31,27 +31,20 @@ impl From<ClientError> for RunnerError {
 
 pub struct Runner {
     pub script_dir: PathBuf,
-    pub dry_run:    bool,
-    pub loop_cap:   u32,
+    pub dry_run: bool,
+    pub loop_cap: u32,
 }
 
 impl Runner {
     pub fn new(script_path: &Path, dry_run: bool) -> Self {
         Self {
-            script_dir: script_path
-                .parent()
-                .unwrap_or(Path::new("."))
-                .to_path_buf(),
+            script_dir: script_path.parent().unwrap_or(Path::new(".")).to_path_buf(),
             dry_run,
             loop_cap: 1000,
         }
     }
 
-    pub async fn run(
-        &self,
-        script: &Script,
-        scope: &mut Scope,
-    ) -> Result<(), RunnerError> {
+    pub async fn run(&self, script: &Script, scope: &mut Scope) -> Result<(), RunnerError> {
         for stmt in &script.statements {
             self.exec(stmt, scope).await?;
         }
@@ -79,8 +72,12 @@ impl Runner {
                     }
                 }
 
-                Statement::Run { path, args, is_async } => {
-                    let resolved   = scope.resolve_expr(path);
+                Statement::Run {
+                    path,
+                    args,
+                    is_async,
+                } => {
+                    let resolved = scope.resolve_expr(path);
                     let macro_path = self.resolve_path(&resolved);
 
                     if !macro_path.exists() {
@@ -97,28 +94,33 @@ impl Runner {
                     for arg in args {
                         let val = scope.resolve_expr(&arg.value);
                         match arg.key.as_str() {
-                            "speed"            => overrides.speed = val.parse().ok(),
-                            "loop_count"       => overrides.loop_count = val.parse().ok(),
-                            "skip_mouse_move"  => overrides.skip_mouse_move = val.parse().ok(),
+                            "speed" => overrides.speed = val.parse().ok(),
+                            "loop_count" => overrides.loop_count = val.parse().ok(),
+                            "skip_mouse_move" => overrides.skip_mouse_move = val.parse().ok(),
                             "scale_to_current" => overrides.scale_to_current = val.parse().ok(),
-                            "wait_for_window"  => overrides.wait_for_window = Some(val),
-                            "wait_timeout_ms"  => overrides.wait_timeout_ms = val.parse().ok(),
+                            "wait_for_window" => overrides.wait_for_window = Some(val),
+                            "wait_timeout_ms" => overrides.wait_timeout_ms = val.parse().ok(),
                             // Anything else is treated as a runtime variable injection
-                            other => { vars.insert(other.to_string(), val); }
+                            other => {
+                                vars.insert(other.to_string(), val);
+                            }
                         }
                     }
 
                     if self.dry_run {
-                        println!("[dry-run] run {:?} (overrides: {:?}, vars: {:?})", macro_path, overrides, vars);
+                        println!(
+                            "[dry-run] run {:?} (overrides: {:?}, vars: {:?})",
+                            macro_path, overrides, vars
+                        );
                         scope.set_last_result(true);
                         return Ok(());
                     }
 
                     let cmd = IpcCommand::Play {
-                        path:      macro_path,
-                        speed:     overrides.speed,
-                        dry_run:   Some(false),
-                        vars:      if vars.is_empty() { None } else { Some(vars) },
+                        path: macro_path,
+                        speed: overrides.speed,
+                        dry_run: Some(false),
+                        vars: if vars.is_empty() { None } else { Some(vars) },
                         overrides: Some(overrides),
                     };
 
@@ -142,8 +144,8 @@ impl Runner {
                                 eprintln!("[script] run error: {}", message);
                                 scope.set_last_result(false);
                             }
-                            Ok(_)   => scope.set_last_result(true),
-                            Err(e)  => {
+                            Ok(_) => scope.set_last_result(true),
+                            Err(e) => {
                                 eprintln!("[script] ipc error: {}", e);
                                 scope.set_last_result(false);
                             }
@@ -187,7 +189,7 @@ impl Runner {
                     body,
                     max_iter,
                 } => {
-                    let cap       = max_iter.unwrap_or(self.loop_cap);
+                    let cap = max_iter.unwrap_or(self.loop_cap);
                     let mut count = 0u32;
 
                     while self.eval_condition(condition, scope).await? {
@@ -205,13 +207,13 @@ impl Runner {
                 } => {
                     if let Condition::Window { title, use_regex } = condition {
                         let resolved = scope.resolve_expr(title);
-                        let query    = WindowQuery::new(&resolved).timeout(*timeout_ms);
-                        let query    = if *use_regex { query.regex() } else { query };
+                        let query = WindowQuery::new(&resolved).timeout(*timeout_ms);
+                        let query = if *use_regex { query.regex() } else { query };
                         wait_for_window(query)
                             .await
                             .map_err(|e| RunnerError::Platform(e.to_string()))?;
                     } else {
-                        let start   = std::time::Instant::now();
+                        let start = std::time::Instant::now();
                         let timeout = Duration::from_millis(*timeout_ms);
                         loop {
                             if start.elapsed() >= timeout {
@@ -255,7 +257,9 @@ impl Runner {
 
         loop {
             if start.elapsed() > timeout {
-                return Err(RunnerError::Generic("timeout waiting for macro completion".into()));
+                return Err(RunnerError::Generic(
+                    "timeout waiting for macro completion".into(),
+                ));
             }
 
             match send_command(IpcCommand::Status).await {
@@ -283,28 +287,28 @@ impl Runner {
         scope: &mut Scope,
     ) -> Result<bool, RunnerError> {
         match condition {
-            Condition::True    => Ok(true),
-            Condition::False   => Ok(false),
+            Condition::True => Ok(true),
+            Condition::False => Ok(false),
 
-            Condition::MacroOk => {
-                Ok(scope.get("last_result") == Some("ok"))
-            }
+            Condition::MacroOk => Ok(scope.get("last_result") == Some("ok")),
 
-            Condition::MacroFail => {
-                Ok(scope.get("last_result") == Some("fail"))
-            }
+            Condition::MacroFail => Ok(scope.get("last_result") == Some("fail")),
 
             Condition::Window { title, use_regex } => {
                 let resolved = scope.resolve_expr(title);
-                let query    = WindowQuery::new(&resolved).timeout(100);
-                let query    = if *use_regex { query.regex() } else { query };
+                let query = WindowQuery::new(&resolved).timeout(100);
+                let query = if *use_regex { query.regex() } else { query };
                 Ok(wait_for_window(query).await.is_ok())
             }
 
-            Condition::Pixel { x, y, hex, tolerance } => {
-                let expected = Rgba::from_hex(hex).ok_or_else(|| {
-                    RunnerError::Generic(format!("invalid hex color: {}", hex))
-                })?;
+            Condition::Pixel {
+                x,
+                y,
+                hex,
+                tolerance,
+            } => {
+                let expected = Rgba::from_hex(hex)
+                    .ok_or_else(|| RunnerError::Generic(format!("invalid hex color: {}", hex)))?;
                 PixelChecker::check_pixel(*x, *y, &expected, *tolerance)
                     .map_err(|e| RunnerError::Platform(e.to_string()))
             }

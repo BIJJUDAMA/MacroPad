@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(
-    name    = "macropad",
-    about   = "macropad — keyboard and mouse macro tool",
+    name = "macropad",
+    about = "macropad — keyboard and mouse macro tool",
     version = "0.1.0"
 )]
 struct Cli {
@@ -84,7 +84,8 @@ enum Command {
 }
 
 fn parse_var(s: &str) -> Result<(String, String), String> {
-    let (k, v) = s.split_once('=')
+    let (k, v) = s
+        .split_once('=')
         .ok_or_else(|| format!("expected KEY=VALUE, got: {}", s))?;
     Ok((k.to_string(), v.to_string()))
 }
@@ -94,36 +95,21 @@ async fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Command::Ping => {
-            commands::cmd_ping().await
-        }
-        Command::Status => {
-            commands::cmd_status().await
-        }
-        Command::Play { path, speed, dry_run, var } => {
-            commands::cmd_play(path, speed, dry_run, var).await
-        }
-        Command::Record { output } => {
-            commands::cmd_record(output).await
-        }
-        Command::StopRecord => {
-            commands::cmd_stop_record().await
-        }
-        Command::Stop => {
-            commands::cmd_stop_playback().await
-        }
-        Command::List => {
-            commands::cmd_list().await
-        }
-        Command::Info { path } => {
-            commands::cmd_info(path).await
-        }
-        Command::History { path } => {
-            commands::cmd_history(path).await
-        }
-        Command::Run { path, dry_run, var } => {
-            commands::cmd_run(path, dry_run, var).await
-        }
+        Command::Ping => commands::cmd_ping().await,
+        Command::Status => commands::cmd_status().await,
+        Command::Play {
+            path,
+            speed,
+            dry_run,
+            var,
+        } => commands::cmd_play(path, speed, dry_run, var).await,
+        Command::Record { output } => commands::cmd_record(output).await,
+        Command::StopRecord => commands::cmd_stop_record().await,
+        Command::Stop => commands::cmd_stop_playback().await,
+        Command::List => commands::cmd_list().await,
+        Command::Info { path } => commands::cmd_info(path).await,
+        Command::History { path } => commands::cmd_history(path).await,
+        Command::Run { path, dry_run, var } => commands::cmd_run(path, dry_run, var).await,
     };
 
     if let Err(e) = result {

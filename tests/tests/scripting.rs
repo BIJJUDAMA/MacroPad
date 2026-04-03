@@ -21,9 +21,12 @@ async fn test_script_logic_flow() {
 
     let runner = Runner::new(Path::new("test.mps"), true); // dry_run = true
     let mut scope = Scope::new();
-    
-    runner.run(&script, &mut scope).await.expect("Execution failed");
-    
+
+    runner
+        .run(&script, &mut scope)
+        .await
+        .expect("Execution failed");
+
     assert_eq!(scope.get("val"), Some("inside_if"));
 }
 
@@ -42,7 +45,7 @@ async fn test_script_loop_iteration() {
 
     let runner = Runner::new(Path::new("test.mps"), true);
     let mut scope = Scope::new();
-    
+
     runner.run(&script, &mut scope).await.unwrap();
     // Verify that it completed without error
 }
@@ -52,7 +55,7 @@ async fn test_windows_path_lexing() {
     let source = r#"run "C:\Users\test\macro.mpr""#;
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize().unwrap();
-    
+
     // Token 0: RUN
     // Token 1: StringLit("C:\Users\test\macro.mpr")
     match &tokens[1].0 {
@@ -69,6 +72,6 @@ fn test_invalid_syntax_detection() {
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize().unwrap();
     let mut parser = Parser::new(tokens);
-    
+
     assert!(parser.parse().is_err());
 }

@@ -8,9 +8,9 @@ pub enum ParseError {
     Lex(#[from] LexError),
     #[error("line {line}: expected {expected}, got {got}")]
     Expected {
-        line:     usize,
+        line: usize,
         expected: String,
-        got:      String,
+        got: String,
     },
     #[error("line {line}: {msg}")]
     Generic { line: usize, msg: String },
@@ -18,7 +18,7 @@ pub enum ParseError {
 
 pub struct Parser {
     tokens: Vec<(Token, usize)>,
-    pos:    usize,
+    pos: usize,
 }
 
 impl Parser {
@@ -27,7 +27,10 @@ impl Parser {
     }
 
     fn peek(&self) -> &Token {
-        self.tokens.get(self.pos).map(|(t, _)| t).unwrap_or(&Token::Eof)
+        self.tokens
+            .get(self.pos)
+            .map(|(t, _)| t)
+            .unwrap_or(&Token::Eof)
     }
 
     fn line(&self) -> usize {
@@ -35,7 +38,11 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        let tok = self.tokens.get(self.pos).map(|(t, _)| t).unwrap_or(&Token::Eof);
+        let tok = self
+            .tokens
+            .get(self.pos)
+            .map(|(t, _)| t)
+            .unwrap_or(&Token::Eof);
         self.pos += 1;
         tok
     }
@@ -48,14 +55,14 @@ impl Parser {
 
     fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
         let line = self.line();
-        let tok  = self.advance().clone();
+        let tok = self.advance().clone();
         if tok == expected {
             Ok(())
         } else {
             Err(ParseError::Expected {
                 line,
                 expected: format!("{:?}", expected),
-                got:      format!("{:?}", tok),
+                got: format!("{:?}", tok),
             })
         }
     }
@@ -77,14 +84,14 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Statement, ParseError> {
         let line = self.line();
         match self.peek().clone() {
-            Token::Let       => self.parse_let(),
-            Token::Run       => self.parse_run(false),
-            Token::RunAsync  => self.parse_run(true),
-            Token::If        => self.parse_if(),
-            Token::Loop      => self.parse_loop(),
+            Token::Let => self.parse_let(),
+            Token::Run => self.parse_run(false),
+            Token::RunAsync => self.parse_run(true),
+            Token::If => self.parse_if(),
+            Token::Loop => self.parse_loop(),
             Token::LoopWhile => self.parse_loop_while(),
-            Token::WaitFor   => self.parse_wait_for(),
-            Token::Delay     => self.parse_delay(),
+            Token::WaitFor => self.parse_wait_for(),
+            Token::Delay => self.parse_delay(),
             other => Err(ParseError::Generic {
                 line,
                 msg: format!("unexpected token: {:?}", other),
@@ -95,12 +102,20 @@ impl Parser {
     fn parse_let(&mut self) -> Result<Statement, ParseError> {
         self.advance(); // consume `let`
         let name = match self.advance().clone() {
-            Token::Ident(n) => if n.starts_with('$') { n[1..].to_string() } else { n },
-            other => return Err(ParseError::Expected {
-                line:     self.line(),
-                expected: "identifier".into(),
-                got:      format!("{:?}", other),
-            }),
+            Token::Ident(n) => {
+                if n.starts_with('$') {
+                    n[1..].to_string()
+                } else {
+                    n
+                }
+            }
+            other => {
+                return Err(ParseError::Expected {
+                    line: self.line(),
+                    expected: "identifier".into(),
+                    got: format!("{:?}", other),
+                })
+            }
         };
         self.expect(Token::Equals)?;
         let value = self.parse_expr()?;
@@ -123,24 +138,31 @@ impl Parser {
             args.push(RunArg { key, value });
         }
 
-        Ok(Statement::Run { path, args, is_async })
+        Ok(Statement::Run {
+            path,
+            args,
+            is_async,
+        })
     }
 
     fn parse_if(&mut self) -> Result<Statement, ParseError> {
         self.advance(); // consume `if`
         let condition = self.parse_condition()?;
-        let body      = self.parse_block()?;
+        let body = self.parse_block()?;
 
         let mut elif_branches = Vec::new();
-        let mut else_body     = None;
+        let mut else_body = None;
 
         loop {
             self.skip_newlines();
             if self.peek() == &Token::Elif {
                 self.advance();
-                let cond  = self.parse_condition()?;
+                let cond = self.parse_condition()?;
                 let block = self.parse_block()?;
-                elif_branches.push(ElifBranch { condition: cond, body: block });
+                elif_branches.push(ElifBranch {
+                    condition: cond,
+                    body: block,
+                });
             } else if self.peek() == &Token::Else {
                 self.advance();
                 else_body = Some(self.parse_block()?);
@@ -150,7 +172,12 @@ impl Parser {
             }
         }
 
-        Ok(Statement::If { condition, body, elif_branches, else_body })
+        Ok(Statement::If {
+            condition,
+            body,
+            elif_branches,
+            else_body,
+        })
     }
 
     fn parse_loop(&mut self) -> Result<Statement, ParseError> {
@@ -158,11 +185,13 @@ impl Parser {
         self.expect(Token::LParen)?;
         let count = match self.advance().clone() {
             Token::Number(n) => n.parse::<u32>().unwrap_or(1),
-            other => return Err(ParseError::Expected {
-                line:     self.line(),
-                expected: "number".into(),
-                got:      format!("{:?}", other),
-            }),
+            other => {
+                return Err(ParseError::Expected {
+                    line: self.line(),
+                    expected: "number".into(),
+                    got: format!("{:?}", other),
+                })
+            }
         };
         self.expect(Token::RParen)?;
         let body = self.parse_block()?;
@@ -184,7 +213,11 @@ impl Parser {
         }
 
         let body = self.parse_block()?;
-        Ok(Statement::LoopWhile { condition, body, max_iter })
+        Ok(Statement::LoopWhile {
+            condition,
+            body,
+            max_iter,
+        })
     }
 
     fn parse_wait_for(&mut self) -> Result<Statement, ParseError> {
@@ -201,18 +234,23 @@ impl Parser {
             }
         }
 
-        Ok(Statement::WaitFor { condition, timeout_ms })
+        Ok(Statement::WaitFor {
+            condition,
+            timeout_ms,
+        })
     }
 
     fn parse_delay(&mut self) -> Result<Statement, ParseError> {
         self.advance(); // consume `delay`
         let ms = match self.advance().clone() {
             Token::Number(n) => parse_duration_ms(&n),
-            other => return Err(ParseError::Expected {
-                line:     self.line(),
-                expected: "duration (e.g. 500ms)".into(),
-                got:      format!("{:?}", other),
-            }),
+            other => {
+                return Err(ParseError::Expected {
+                    line: self.line(),
+                    expected: "duration (e.g. 500ms)".into(),
+                    got: format!("{:?}", other),
+                })
+            }
         };
         Ok(Statement::Delay { ms })
     }
@@ -238,10 +276,7 @@ impl Parser {
         let line = self.line();
         match self.advance().clone() {
             Token::Window | Token::WindowRe => {
-                let use_regex = matches!(
-                    self.tokens.get(self.pos - 1),
-                    Some((Token::WindowRe, _))
-                );
+                let use_regex = matches!(self.tokens.get(self.pos - 1), Some((Token::WindowRe, _)));
                 self.expect(Token::LParen)?;
                 let title = self.parse_expr()?;
                 self.expect(Token::RParen)?;
@@ -250,18 +285,20 @@ impl Parser {
 
             Token::Pixel => {
                 self.expect(Token::LParen)?;
-                let x   = self.parse_i32()?;
+                let x = self.parse_i32()?;
                 self.expect(Token::Comma)?;
-                let y   = self.parse_i32()?;
+                let y = self.parse_i32()?;
                 self.expect(Token::Comma)?;
                 let hex = match self.advance().clone() {
                     Token::Ident(h) => format!("#{}", h),
                     Token::StringLit(h) => h,
-                    other => return Err(ParseError::Expected {
-                        line,
-                        expected: "hex color".into(),
-                        got:      format!("{:?}", other),
-                    }),
+                    other => {
+                        return Err(ParseError::Expected {
+                            line,
+                            expected: "hex color".into(),
+                            got: format!("{:?}", other),
+                        })
+                    }
                 };
                 // optional tolerance=N
                 let mut tolerance = 0u32;
@@ -276,13 +313,18 @@ impl Parser {
                     }
                 }
                 self.expect(Token::RParen)?;
-                Ok(Condition::Pixel { x, y, hex, tolerance })
+                Ok(Condition::Pixel {
+                    x,
+                    y,
+                    hex,
+                    tolerance,
+                })
             }
 
-            Token::MacroOk   => Ok(Condition::MacroOk),
+            Token::MacroOk => Ok(Condition::MacroOk),
             Token::MacroFail => Ok(Condition::MacroFail),
-            Token::True      => Ok(Condition::True),
-            Token::False     => Ok(Condition::False),
+            Token::True => Ok(Condition::True),
+            Token::False => Ok(Condition::False),
 
             other => Err(ParseError::Generic {
                 line,
@@ -310,9 +352,9 @@ impl Parser {
                 Ok(Expr::Literal(n))
             }
             other => Err(ParseError::Expected {
-                line:     self.line(),
+                line: self.line(),
                 expected: "expression".into(),
-                got:      format!("{:?}", other),
+                got: format!("{:?}", other),
             }),
         }
     }
@@ -321,12 +363,12 @@ impl Parser {
         match self.advance().clone() {
             Token::Number(n) => n.parse::<i32>().map_err(|_| ParseError::Generic {
                 line: self.line(),
-                msg:  format!("'{}' is not a valid integer", n),
+                msg: format!("'{}' is not a valid integer", n),
             }),
             other => Err(ParseError::Expected {
-                line:     self.line(),
+                line: self.line(),
                 expected: "integer".into(),
-                got:      format!("{:?}", other),
+                got: format!("{:?}", other),
             }),
         }
     }
@@ -337,9 +379,9 @@ fn parse_interpolated(s: &str) -> Expr {
         return Expr::Literal(s.to_string());
     }
 
-    let mut parts  = Vec::new();
-    let mut buf    = String::new();
-    let mut chars  = s.chars().peekable();
+    let mut parts = Vec::new();
+    let mut buf = String::new();
+    let mut chars = s.chars().peekable();
 
     while let Some(ch) = chars.next() {
         if ch == '$' {

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
-use tracing::{info, warn, debug};
+use tracing::{debug, info, warn};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PlaybackStatus {
@@ -20,27 +20,27 @@ pub struct HotkeyStore {
 }
 
 pub struct AppState {
-    pub hotkeys:        HotkeyManager,
-    pub hotkeys_path:   PathBuf,
-    pub status:         PlaybackStatus,
-    pub last_result:    Option<bool>,
+    pub hotkeys: HotkeyManager,
+    pub hotkeys_path: PathBuf,
+    pub status: PlaybackStatus,
+    pub last_result: Option<bool>,
     pub record_stop_tx: Option<oneshot::Sender<()>>,
     pub record_done_rx: Option<oneshot::Receiver<()>>,
-    pub macros:         HashMap<String, macropad_core::models::Metadata>,
-    pub event_bus:      tokio::sync::broadcast::Sender<macropad_core::models::Event>,
+    pub macros: HashMap<String, macropad_core::models::Metadata>,
+    pub event_bus: tokio::sync::broadcast::Sender<macropad_core::models::Event>,
 }
 
 impl AppState {
     pub fn new(hotkeys_path: PathBuf) -> Self {
         let mut s = Self {
-            hotkeys:        HotkeyManager::new(),
+            hotkeys: HotkeyManager::new(),
             hotkeys_path,
-            status:         PlaybackStatus::Idle,
-            last_result:    None,
+            status: PlaybackStatus::Idle,
+            last_result: None,
             record_stop_tx: None,
             record_done_rx: None,
-            macros:         HashMap::new(),
-            event_bus:      tokio::sync::broadcast::channel(1024).0,
+            macros: HashMap::new(),
+            event_bus: tokio::sync::broadcast::channel(1024).0,
         };
         if let Err(e) = s.load_hotkeys() {
             warn!("failed to load hotkeys: {}", e);
@@ -53,14 +53,17 @@ impl AppState {
             return Ok(());
         }
         let content = std::fs::read_to_string(&self.hotkeys_path)?;
-        let store: HotkeyStore = toml::from_str(&content)
-            .map_err(|e| format!("TOML parse error: {}", e))?;
+        let store: HotkeyStore =
+            toml::from_str(&content).map_err(|e| format!("TOML parse error: {}", e))?;
         for (hk_str, path_str) in store.bindings {
             if let Ok(hk) = Hotkey::parse(&hk_str) {
                 let _ = self.hotkeys.register(hk, &path_str);
             }
         }
-        info!("loaded {} hotkey bindings", self.hotkeys.all_bindings().len());
+        info!(
+            "loaded {} hotkey bindings",
+            self.hotkeys.all_bindings().len()
+        );
         Ok(())
     }
 
@@ -71,8 +74,8 @@ impl AppState {
         for (hk, path) in self.hotkeys.all_bindings() {
             store.bindings.insert(hk.to_display_string(), path.clone());
         }
-        let content = toml::to_string_pretty(&store)
-            .map_err(|e| format!("TOML serialize error: {}", e))?;
+        let content =
+            toml::to_string_pretty(&store).map_err(|e| format!("TOML serialize error: {}", e))?;
         if let Some(parent) = self.hotkeys_path.parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -99,7 +102,7 @@ impl AppState {
 
     pub fn refresh_macros(&mut self, mpr_paths: &[PathBuf], mps_paths: &[PathBuf]) {
         self.macros.clear();
-        
+
         // Scan MPR files
         for path in mpr_paths {
             if let Ok(rec) = macropad_core::load(path) {

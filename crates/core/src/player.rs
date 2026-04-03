@@ -1,8 +1,6 @@
-use crate::models::{Event, EventType, MouseButton, MacropadRec};
+use crate::models::{Event, EventType, MacropadRec, MouseButton};
+use enigo::{Button, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings};
 use std::collections::HashMap;
-use enigo::{
-    Button, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings,
-};
 use std::thread;
 use std::time::Duration;
 use thiserror::Error;
@@ -40,20 +38,30 @@ pub fn get_screen_resolution() -> (u32, u32) {
         use winapi::um::winuser::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
         let w = unsafe { GetSystemMetrics(SM_CXSCREEN) } as u32;
         let h = unsafe { GetSystemMetrics(SM_CYSCREEN) } as u32;
-        if w > 0 && h > 0 { return (w, h); }
+        if w > 0 && h > 0 {
+            return (w, h);
+        }
     }
     (1920, 1080)
 }
 
 fn scale_coord(val: i32, recorded: u32, current: u32) -> i32 {
-    if recorded == 0 { return val; }
+    if recorded == 0 {
+        return val;
+    }
     ((val as f64 / recorded as f64) * current as f64) as i32
 }
 
-fn catmull_rom_points(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], steps: usize) -> Vec<[f64; 2]> {
+fn catmull_rom_points(
+    p0: [f64; 2],
+    p1: [f64; 2],
+    p2: [f64; 2],
+    p3: [f64; 2],
+    steps: usize,
+) -> Vec<[f64; 2]> {
     let mut pts = Vec::with_capacity(steps);
     for i in 0..steps {
-        let t  = i as f64 / steps as f64;
+        let t = i as f64 / steps as f64;
         let t2 = t * t;
         let t3 = t2 * t;
         for dim in 0..2 {
@@ -61,12 +69,11 @@ fn catmull_rom_points(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], st
             let v1 = p1[dim];
             let v2 = p2[dim];
             let v3 = p3[dim];
-            let val = 0.5 * (
-                (2.0 * v1)
-                + (-v0 + v2) * t
-                + (2.0 * v0 - 5.0 * v1 + 4.0 * v2 - v3) * t2
-                + (-v0 + 3.0 * v1 - 3.0 * v2 + v3) * t3
-            );
+            let val = 0.5
+                * ((2.0 * v1)
+                    + (-v0 + v2) * t
+                    + (2.0 * v0 - 5.0 * v1 + 4.0 * v2 - v3) * t2
+                    + (-v0 + 3.0 * v1 - 3.0 * v2 + v3) * t3);
             if dim == 0 {
                 pts.push([val, 0.0]);
             } else if let Some(last) = pts.last_mut() {
@@ -78,27 +85,26 @@ fn catmull_rom_points(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], st
 }
 
 pub async fn play(
-    rec:      &MacropadRec,
-    speed:    Option<f64>,
-    dry_run:  bool,
+    rec: &MacropadRec,
+    speed: Option<f64>,
+    dry_run: bool,
     abort_rx: watch::Receiver<bool>,
-    vars:     Option<&HashMap<String, String>>,
+    vars: Option<&HashMap<String, String>>,
 ) -> Result<(), PlayerError> {
-    let speed       = speed.unwrap_or(rec.playback.speed).max(0.01);
-    let loop_count  = rec.playback.loop_count.max(1);
+    let speed = speed.unwrap_or(rec.playback.speed).max(0.01);
+    let loop_count = rec.playback.loop_count.max(1);
 
     let (cur_w, cur_h) = get_screen_resolution();
-    let (rec_w, rec_h) = rec.playback.recorded_resolution
+    let (rec_w, rec_h) = rec
+        .playback
+        .recorded_resolution
         .map(|r| (r[0], r[1]))
         .unwrap_or((cur_w, cur_h));
 
     let scale = rec.playback.scale_to_current && (rec_w != cur_w || rec_h != cur_h);
 
     let mut enigo = if !dry_run {
-        Some(
-            Enigo::new(&Settings::default())
-                .map_err(|e| PlayerError::EnigoInit(e.to_string()))?,
-        )
+        Some(Enigo::new(&Settings::default()).map_err(|e| PlayerError::EnigoInit(e.to_string()))?)
     } else {
         None
     };
@@ -108,7 +114,7 @@ pub async fn play(
         if !dry_run {
             let query = platform::window::WindowQuery::new(target_window)
                 .timeout(rec.playback.wait_timeout_ms);
-            // Ignore failure here? Or return error? 
+            // Ignore failure here? Or return error?
             // Better to return error if window not found.
             platform::window::wait_for_window(query)
                 .await
@@ -131,12 +137,15 @@ pub async fn play(
             }
 
             if rec.playback.skip_mouse_move
-                && matches!(event.event_type, EventType::MouseMove | EventType::MouseSegment)
+                && matches!(
+                    event.event_type,
+                    EventType::MouseMove | EventType::MouseSegment
+                )
             {
                 continue;
             }
 
-            let gap_ms       = event.time_ms.saturating_sub(prev_time_ms);
+            let gap_ms = event.time_ms.saturating_sub(prev_time_ms);
             let actual_delay = (gap_ms as f64 / speed) as u64;
 
             if actual_delay > 0 {
@@ -165,8 +174,12 @@ pub async fn play(
 
 /// Resolve `$var` references in a string using the runtime vars map.
 fn resolve_var(s: &str, vars: Option<&HashMap<String, String>>) -> String {
-    let Some(map) = vars else { return s.to_string() };
-    if !s.contains('$') { return s.to_string(); }
+    let Some(map) = vars else {
+        return s.to_string();
+    };
+    if !s.contains('$') {
+        return s.to_string();
+    }
 
     let mut result = s.to_string();
     for (k, v) in map {
@@ -176,18 +189,30 @@ fn resolve_var(s: &str, vars: Option<&HashMap<String, String>>) -> String {
 }
 
 async fn execute_event(
-    enigo:  &mut Enigo,
-    event:  &Event,
-    scale:  bool,
-    rec_w:  u32,
-    rec_h:  u32,
-    cur_w:  u32,
-    cur_h:  u32,
-    speed:  f64,
-    vars:   Option<&HashMap<String, String>>,
+    enigo: &mut Enigo,
+    event: &Event,
+    scale: bool,
+    rec_w: u32,
+    rec_h: u32,
+    cur_w: u32,
+    cur_h: u32,
+    speed: f64,
+    vars: Option<&HashMap<String, String>>,
 ) -> Result<(), PlayerError> {
-    let sx = |v: i32| if scale { scale_coord(v, rec_w, cur_w) } else { v };
-    let sy = |v: i32| if scale { scale_coord(v, rec_h, cur_h) } else { v };
+    let sx = |v: i32| {
+        if scale {
+            scale_coord(v, rec_w, cur_w)
+        } else {
+            v
+        }
+    };
+    let sy = |v: i32| {
+        if scale {
+            scale_coord(v, rec_h, cur_h)
+        } else {
+            v
+        }
+    };
 
     match event.event_type {
         EventType::KeyDown => {
@@ -206,12 +231,12 @@ async fn execute_event(
 
         EventType::MouseDown => {
             let btn = map_button(event.button.as_ref());
-            let _   = enigo.button(btn, Direction::Press);
+            let _ = enigo.button(btn, Direction::Press);
         }
 
         EventType::MouseUp => {
             let btn = map_button(event.button.as_ref());
-            let _   = enigo.button(btn, Direction::Release);
+            let _ = enigo.button(btn, Direction::Release);
         }
 
         EventType::MouseMove => {
@@ -223,8 +248,8 @@ async fn execute_event(
         EventType::MouseSegment => {
             let from_x = sx(event.x.unwrap_or(0));
             let from_y = sy(event.y.unwrap_or(0));
-            let to_x   = sx(event.delta_x.unwrap_or(0) as i32);
-            let to_y   = sy(event.delta_y.unwrap_or(0) as i32);
+            let to_x = sx(event.delta_x.unwrap_or(0) as i32);
+            let to_y = sy(event.delta_y.unwrap_or(0) as i32);
             let dur_ms = (event.duration_ms.unwrap_or(100) as f64 / speed) as u64;
 
             if let Some(ref waypoints) = event.waypoints {
@@ -235,7 +260,11 @@ async fn execute_event(
                         .collect();
 
                     let total_pts = pts.len();
-                    let step_ms   = if total_pts > 1 { dur_ms / (total_pts as u64) } else { dur_ms };
+                    let step_ms = if total_pts > 1 {
+                        dur_ms / (total_pts as u64)
+                    } else {
+                        dur_ms
+                    };
 
                     for i in 0..total_pts {
                         let p0 = pts[i.saturating_sub(1)];
@@ -256,8 +285,8 @@ async fn execute_event(
                     let _ = enigo.move_mouse(to_x, to_y, Coordinate::Abs);
                 }
             } else {
-                let steps    = 20usize;
-                let step_ms  = dur_ms / steps.max(1) as u64;
+                let steps = 20usize;
+                let step_ms = dur_ms / steps.max(1) as u64;
                 for i in 0..=steps {
                     let t = i as f64 / steps as f64;
                     let x = (from_x as f64 + (to_x - from_x) as f64 * t) as i32;
@@ -273,8 +302,12 @@ async fn execute_event(
         EventType::Scroll => {
             let dx = event.delta_x.unwrap_or(0) as i32;
             let dy = event.delta_y.unwrap_or(0) as i32;
-            if dx != 0 { let _ = enigo.scroll(dx, enigo::Axis::Horizontal); }
-            if dy != 0 { let _ = enigo.scroll(dy, enigo::Axis::Vertical); }
+            if dx != 0 {
+                let _ = enigo.scroll(dx, enigo::Axis::Horizontal);
+            }
+            if dy != 0 {
+                let _ = enigo.scroll(dy, enigo::Axis::Vertical);
+            }
         }
 
         EventType::Delay => {
@@ -301,45 +334,45 @@ async fn execute_event(
 
 fn map_button(btn: Option<&MouseButton>) -> Button {
     match btn {
-        Some(MouseButton::Right)  => Button::Right,
+        Some(MouseButton::Right) => Button::Right,
         Some(MouseButton::Middle) => Button::Middle,
-        _                         => Button::Left,
+        _ => Button::Left,
     }
 }
 
 fn parse_key(s: &str) -> Result<Key, PlayerError> {
     let key = match s {
-        "alt"       => Key::Alt,
+        "alt" => Key::Alt,
         "backspace" => Key::Backspace,
-        "capslock"  => Key::CapsLock,
-        "ctrl"      => Key::Control,
-        "delete"    => Key::Delete,
-        "down"      => Key::DownArrow,
-        "end"       => Key::End,
-        "enter"     => Key::Return,
-        "escape"    => Key::Escape,
-        "f1"        => Key::F1,
-        "f2"        => Key::F2,
-        "f3"        => Key::F3,
-        "f4"        => Key::F4,
-        "f5"        => Key::F5,
-        "f6"        => Key::F6,
-        "f7"        => Key::F7,
-        "f8"        => Key::F8,
-        "f9"        => Key::F9,
-        "f10"       => Key::F10,
-        "f11"       => Key::F11,
-        "f12"       => Key::F12,
-        "home"      => Key::Home,
-        "left"      => Key::LeftArrow,
-        "meta"      => Key::Meta,
-        "pagedown"  => Key::PageDown,
-        "pageup"    => Key::PageUp,
-        "right"     => Key::RightArrow,
-        "shift"     => Key::Shift,
-        "space"     => Key::Space,
-        "tab"       => Key::Tab,
-        "up"        => Key::UpArrow,
+        "capslock" => Key::CapsLock,
+        "ctrl" => Key::Control,
+        "delete" => Key::Delete,
+        "down" => Key::DownArrow,
+        "end" => Key::End,
+        "enter" => Key::Return,
+        "escape" => Key::Escape,
+        "f1" => Key::F1,
+        "f2" => Key::F2,
+        "f3" => Key::F3,
+        "f4" => Key::F4,
+        "f5" => Key::F5,
+        "f6" => Key::F6,
+        "f7" => Key::F7,
+        "f8" => Key::F8,
+        "f9" => Key::F9,
+        "f10" => Key::F10,
+        "f11" => Key::F11,
+        "f12" => Key::F12,
+        "home" => Key::Home,
+        "left" => Key::LeftArrow,
+        "meta" => Key::Meta,
+        "pagedown" => Key::PageDown,
+        "pageup" => Key::PageUp,
+        "right" => Key::RightArrow,
+        "shift" => Key::Shift,
+        "space" => Key::Space,
+        "tab" => Key::Tab,
+        "up" => Key::UpArrow,
         s if s.len() == 1 => Key::Unicode(s.chars().next().unwrap()),
         other => return Err(PlayerError::UnknownKey(other.into())),
     };

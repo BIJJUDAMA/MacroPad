@@ -56,13 +56,13 @@ impl PixelChecker {
     }
 
     pub fn get_pixel(x: i32, y: i32) -> Result<Rgba, ScreenshotError> {
-        let screens = Screen::all()
-            .map_err(|e| ScreenshotError::CaptureFailed(e.to_string()))?;
+        let screens = Screen::all().map_err(|e| ScreenshotError::CaptureFailed(e.to_string()))?;
 
         let screen = screens.first().ok_or(ScreenshotError::NoScreen)?;
         let info = screen.display_info;
 
-        if x < info.x || y < info.y
+        if x < info.x
+            || y < info.y
             || x >= info.x + info.width as i32
             || y >= info.y + info.height as i32
         {
@@ -76,12 +76,9 @@ impl PixelChecker {
         let px = (x - info.x) as u32;
         let py = (y - info.y) as u32;
 
-        let rgba_image = image::RgbaImage::from_raw(
-            image.width(),
-            image.height(),
-            image.as_raw().to_vec(),
-        )
-        .ok_or_else(|| ScreenshotError::CaptureFailed("buffer size mismatch".into()))?;
+        let rgba_image =
+            image::RgbaImage::from_raw(image.width(), image.height(), image.as_raw().to_vec())
+                .ok_or_else(|| ScreenshotError::CaptureFailed("buffer size mismatch".into()))?;
 
         let pixel = rgba_image.get_pixel(px, py);
         Ok(Rgba {
@@ -98,8 +95,7 @@ impl PixelChecker {
         width: u32,
         height: u32,
     ) -> Result<RgbaImage, ScreenshotError> {
-        let screens = Screen::all()
-            .map_err(|e| ScreenshotError::CaptureFailed(e.to_string()))?;
+        let screens = Screen::all().map_err(|e| ScreenshotError::CaptureFailed(e.to_string()))?;
 
         let screen = screens.first().ok_or(ScreenshotError::NoScreen)?;
 
@@ -107,12 +103,9 @@ impl PixelChecker {
             .capture_area(x, y, width, height)
             .map_err(|e| ScreenshotError::CaptureFailed(e.to_string()))?;
 
-        let rgba = image::RgbaImage::from_raw(
-            image.width(),
-            image.height(),
-            image.as_raw().to_vec(),
-        )
-        .ok_or_else(|| ScreenshotError::CaptureFailed("buffer size mismatch".into()))?;
+        let rgba =
+            image::RgbaImage::from_raw(image.width(), image.height(), image.as_raw().to_vec())
+                .ok_or_else(|| ScreenshotError::CaptureFailed("buffer size mismatch".into()))?;
 
         Ok(rgba)
     }
@@ -139,8 +132,18 @@ impl PixelChecker {
             .pixels()
             .zip(template.pixels())
             .map(|(a, b)| {
-                let ra = Rgba { r: a[0], g: a[1], b: a[2], a: a[3] };
-                let rb = Rgba { r: b[0], g: b[1], b: b[2], a: b[3] };
+                let ra = Rgba {
+                    r: a[0],
+                    g: a[1],
+                    b: a[2],
+                    a: a[3],
+                };
+                let rb = Rgba {
+                    r: b[0],
+                    g: b[1],
+                    b: b[2],
+                    a: b[3],
+                };
                 ra.distance(&rb)
             })
             .sum();

@@ -1,6 +1,6 @@
 use crate::ipc_client::{send_command, ClientError};
-use macropad_ipc::{IpcCommand, IpcResponse};
 use macropad_core::load;
+use macropad_ipc::{IpcCommand, IpcResponse};
 use std::path::PathBuf;
 
 pub async fn cmd_ping() -> Result<(), ClientError> {
@@ -18,12 +18,15 @@ pub async fn cmd_ping() -> Result<(), ClientError> {
 
 pub async fn cmd_status() -> Result<(), ClientError> {
     match send_command(IpcCommand::Status).await? {
-        IpcResponse::Status { status, last_result } => {
+        IpcResponse::Status {
+            status,
+            last_result,
+        } => {
             println!("[macropad] status: {}", status);
             match last_result {
-                Some(true)  => println!("[macropad] last run: ok"),
+                Some(true) => println!("[macropad] last run: ok"),
                 Some(false) => println!("[macropad] last run: failed"),
-                None        => println!("[macropad] last run: none"),
+                None => println!("[macropad] last run: none"),
             }
             Ok(())
         }
@@ -62,7 +65,9 @@ pub async fn cmd_play(
         dry_run: Some(dry_run),
         vars: Some(vars),
         overrides: None, // We can add flag support for specific overrides later if needed
-    }).await? {
+    })
+    .await?
+    {
         IpcResponse::Ok => {
             println!("[macropad] playback started");
             Ok(())
@@ -82,7 +87,12 @@ pub async fn cmd_record(output: PathBuf) -> Result<(), ClientError> {
     println!("[macropad] recording — press Ctrl+C to stop");
     println!("[macropad] output: {}", output.display());
 
-    match send_command(IpcCommand::Record { output_path: output, options: None }).await? {
+    match send_command(IpcCommand::Record {
+        output_path: output,
+        options: None,
+    })
+    .await?
+    {
         IpcResponse::Ok => {
             println!("[macropad] recording started");
             Ok(())
@@ -196,7 +206,8 @@ pub async fn cmd_history(path: PathBuf) -> Result<(), ClientError> {
                 for entry in entries {
                     println!(
                         "  {}",
-                        entry.file_name()
+                        entry
+                            .file_name()
                             .and_then(|n| n.to_str())
                             .unwrap_or("unknown")
                     );

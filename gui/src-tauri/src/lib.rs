@@ -13,22 +13,22 @@ pub struct ConfigState {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MacroInfo {
-    pub name:          String,
-    pub path:          String,
-    pub tags:          Vec<String>,
-    pub created:       String,
-    pub event_count:   usize,
-    pub speed:         f64,
-    pub loop_count:    u32,
-    pub requires:      Vec<String>,
-    pub origin_type:   String,
-    pub line_count:    Option<u32>,
+    pub name: String,
+    pub path: String,
+    pub tags: Vec<String>,
+    pub created: String,
+    pub event_count: usize,
+    pub speed: f64,
+    pub loop_count: u32,
+    pub requires: Vec<String>,
+    pub origin_type: String,
+    pub line_count: Option<u32>,
     pub command_count: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlaybackResult {
-    pub ok:      bool,
+    pub ok: bool,
     pub message: String,
 }
 
@@ -44,11 +44,16 @@ async fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
 
     if extension == "mps" {
         let content = std::fs::read_to_string(&p).unwrap_or_default();
-        tracing::info!("GUI Backend: Loading .mps info from {:?}, content len: {}", p, content.len());
+        tracing::info!(
+            "GUI Backend: Loading .mps info from {:?}, content len: {}",
+            p,
+            content.len()
+        );
         let lines: Vec<&str> = content.lines().collect();
         tracing::info!("GUI Backend: Found {} lines in .mps", lines.len());
-        
-        let mut name = p.file_stem()
+
+        let mut name = p
+            .file_stem()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_else(|| "unnamed".into());
         let mut tags = Vec::new();
@@ -63,7 +68,8 @@ async fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
             } else if trimmed.starts_with("// @tags:") {
                 if let Some(val) = trimmed.splitn(2, ':').nth(1) {
                     let cleaned = val.trim().trim_matches(|c| c == '[' || c == ']');
-                    tags = cleaned.split(',')
+                    tags = cleaned
+                        .split(',')
                         .map(|s| s.trim().trim_matches('"').to_string())
                         .filter(|s| !s.is_empty())
                         .collect();
@@ -80,9 +86,9 @@ async fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
 
         return Ok(MacroInfo {
             name,
-            path:        path.to_string(),
+            path: path.to_string(),
             tags,
-            created:     std::fs::metadata(&p)
+            created: std::fs::metadata(&p)
                 .and_then(|m| m.created())
                 .map(|t| {
                     let dt: chrono::DateTime<chrono::Local> = t.into();
@@ -90,57 +96,59 @@ async fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
                 })
                 .unwrap_or_else(|_| "unknown".to_string()),
             event_count: 0,
-            speed:       1.0,
-            loop_count:  1,
-            requires:    vec![],
+            speed: 1.0,
+            loop_count: 1,
+            requires: vec![],
             origin_type: "script".into(),
-            line_count:  Some(lines.len() as u32),
+            line_count: Some(lines.len() as u32),
             command_count: Some(command_count),
         });
     }
 
-    let rec = macropad_core::load(&p)
-        .map_err(|e| format!("failed to load {}: {}", path, e))?;
+    let rec = macropad_core::load(&p).map_err(|e| format!("failed to load {}: {}", path, e))?;
 
     Ok(MacroInfo {
-        name:          rec.meta.name,
-        path:          path.to_string(),
-        tags:          rec.meta.tags,
-        created:       rec.meta.created.to_string(),
-        event_count:   rec.events.len(),
-        speed:         rec.playback.speed,
-        loop_count:    rec.playback.loop_count,
-        requires:      rec.meta.requires,
-        origin_type:   "recording".into(),
-        line_count:    None,
+        name: rec.meta.name,
+        path: path.to_string(),
+        tags: rec.meta.tags,
+        created: rec.meta.created.to_string(),
+        event_count: rec.events.len(),
+        speed: rec.playback.speed,
+        loop_count: rec.playback.loop_count,
+        requires: rec.meta.requires,
+        origin_type: "recording".into(),
+        line_count: None,
         command_count: None,
     })
 }
 
 #[tauri::command]
-async fn list_macros(
-    state: State<'_, ConfigState>,
-) -> Result<Vec<MacroInfo>, String> {
+async fn list_macros(state: State<'_, ConfigState>) -> Result<Vec<MacroInfo>, String> {
     let (mpr_paths, mps_paths) = {
         let c = state.config.lock().unwrap();
         (c.mpr_paths.clone(), c.mps_paths.clone())
     };
 
-    match send_ipc(IpcCommand::ListMacros { mpr_paths, mps_paths }).await? {
+    match send_ipc(IpcCommand::ListMacros {
+        mpr_paths,
+        mps_paths,
+    })
+    .await?
+    {
         IpcResponse::Macros { items } => {
             let mut infos = Vec::new();
             for item in items {
                 infos.push(MacroInfo {
-                    name:          item.meta.name,
-                    path:          item.path.to_string_lossy().to_string(),
-                    tags:          item.meta.tags,
-                    created:       item.meta.created.to_string(),
-                    event_count:   0, // We'll fix this later or it's implicitly metadata
-                    speed:         1.0,
-                    loop_count:    1,
-                    requires:      item.meta.requires,
-                    origin_type:   format!("{:?}", item.meta.origin_type).to_lowercase(),
-                    line_count:    item.meta.line_count,
+                    name: item.meta.name,
+                    path: item.path.to_string_lossy().to_string(),
+                    tags: item.meta.tags,
+                    created: item.meta.created.to_string(),
+                    event_count: 0, // We'll fix this later or it's implicitly metadata
+                    speed: 1.0,
+                    loop_count: 1,
+                    requires: item.meta.requires,
+                    origin_type: format!("{:?}", item.meta.origin_type).to_lowercase(),
+                    line_count: item.meta.line_count,
                     command_count: item.meta.command_count,
                 });
             }
@@ -161,40 +169,38 @@ async fn get_macro_info(path: String) -> Result<MacroInfo, String> {
 
 #[tauri::command]
 async fn play_macro(
-    state:   State<'_, ConfigState>,
-    path:    String,
-    speed:   Option<f64>,
+    state: State<'_, ConfigState>,
+    path: String,
+    speed: Option<f64>,
     dry_run: bool,
-    vars:    Option<std::collections::HashMap<String, String>>,
+    vars: Option<std::collections::HashMap<String, String>>,
 ) -> Result<PlaybackResult, String> {
     // Use global default speed if not specified
-    let effective_speed = speed.or_else(|| {
-        state.config.lock().ok().map(|c| c.playback_defaults.speed)
-    });
+    let effective_speed =
+        speed.or_else(|| state.config.lock().ok().map(|c| c.playback_defaults.speed));
 
     let cmd = IpcCommand::Play {
-        path:      PathBuf::from(&path),
-        speed:     effective_speed,
-        dry_run:   Some(dry_run),
+        path: PathBuf::from(&path),
+        speed: effective_speed,
+        dry_run: Some(dry_run),
         vars,
         overrides: None,
     };
 
     match send_ipc(cmd).await? {
         IpcResponse::Ok => Ok(PlaybackResult {
-            ok:      true,
+            ok: true,
             message: "playback started".into(),
         }),
-        IpcResponse::Error { message } => Ok(PlaybackResult {
-            ok:      false,
-            message,
-        }),
+        IpcResponse::Error { message } => Ok(PlaybackResult { ok: false, message }),
         _ => Err("unexpected response".into()),
     }
 }
 
 #[tauri::command]
-fn get_app_config(state: State<'_, ConfigState>) -> Result<macropad_core::models::AppConfig, String> {
+fn get_app_config(
+    state: State<'_, ConfigState>,
+) -> Result<macropad_core::models::AppConfig, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?;
     Ok(config.clone())
 }
@@ -218,7 +224,7 @@ fn save_as_mpr(app: tauri::AppHandle) -> Result<Option<String>, String> {
         .file()
         .add_filter("MacroRecording files", &["mpr"])
         .blocking_save_file();
-    
+
     let result = path.and_then(|p| p.as_path().map(|ap| ap.to_string_lossy().to_string()));
     tracing::info!("GUI Backend: save_as_mpr selected path: {:?}", result);
     Ok(result)
@@ -231,7 +237,7 @@ async fn start_record(
     output_path: String,
 ) -> Result<(), String> {
     tracing::info!("start_record requested for path: {}", output_path);
-    
+
     // Minimize the window so user can interact with other apps
     if let Err(e) = window.minimize() {
         tracing::warn!("Failed to minimize window: {}", e);
@@ -245,7 +251,7 @@ async fn start_record(
         output_path: PathBuf::from(output_path),
         options: Some(options),
     };
-    
+
     tracing::info!("GUI Backend: Sending Record IPC command to daemon...");
     let response = send_ipc(cmd).await?;
     tracing::info!("GUI Backend: Received daemon response: {:?}", response);
@@ -254,15 +260,18 @@ async fn start_record(
         IpcResponse::Ok => {
             tracing::info!("GUI Backend: Recording successfully started in daemon.");
             Ok(())
-        },
+        }
         IpcResponse::Error { message } => {
             tracing::error!("GUI Backend: Daemon reported error: {}", message);
             Err(format!("Daemon error: {}", message))
-        },
+        }
         _ => {
-            tracing::error!("GUI Backend: Unexpected response from daemon: {:?}", response);
+            tracing::error!(
+                "GUI Backend: Unexpected response from daemon: {:?}",
+                response
+            );
             Err("unexpected response from daemon".into())
-        },
+        }
     }
 }
 
@@ -289,7 +298,7 @@ async fn stop_playback() -> Result<(), String> {
 async fn get_daemon_status() -> Result<String, String> {
     match send_ipc(IpcCommand::Status).await {
         Ok(IpcResponse::Status { status, .. }) => Ok(status),
-        Ok(_)  => Ok("unknown".into()),
+        Ok(_) => Ok("unknown".into()),
         Err(_) => Ok("offline".into()),
     }
 }
@@ -309,49 +318,53 @@ fn browse_mpr(app: tauri::AppHandle) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn load_events(path: String) -> Result<Vec<serde_json::Value>, String> {
-    let p   = PathBuf::from(&path);
-    let rec = macropad_core::load(&p)
-        .map_err(|e| e.to_string())?;
+    let p = PathBuf::from(&path);
+    let rec = macropad_core::load(&p).map_err(|e| e.to_string())?;
 
-    let events = serde_json::to_value(&rec.events)
-        .map_err(|e| e.to_string())?;
+    let events = serde_json::to_value(&rec.events).map_err(|e| e.to_string())?;
 
     Ok(events.as_array().cloned().unwrap_or_default())
 }
 
 #[tauri::command]
 fn save_events(path: String, events: Vec<serde_json::Value>) -> Result<(), String> {
-    let p   = PathBuf::from(&path);
-    let mut rec = macropad_core::load(&p)
-        .map_err(|e| e.to_string())?;
+    let p = PathBuf::from(&path);
+    let mut rec = macropad_core::load(&p).map_err(|e| e.to_string())?;
 
-    rec.events = serde_json::from_value(serde_json::Value::Array(events))
-        .map_err(|e| e.to_string())?;
+    rec.events =
+        serde_json::from_value(serde_json::Value::Array(events)).map_err(|e| e.to_string())?;
 
-    macropad_core::save(&rec, &p)
-        .map_err(|e| e.to_string())?;
+    macropad_core::save(&rec, &p).map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
 #[tauri::command]
 fn set_theme_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
-    let window = app.get_webview_window("main")
+    let window = app
+        .get_webview_window("main")
         .or_else(|| app.webview_windows().values().next().cloned())
         .ok_or("could not find any window to set icon")?;
-    
+
     tracing::info!("Setting {} theme icon", theme);
- 
-    
-    let icon_name = if theme == "dark" { "Logo_Dark.png" } else { "Logo_Light.png" };
-    
+
+    let icon_name = if theme == "dark" {
+        "Logo_Dark.png"
+    } else {
+        "Logo_Light.png"
+    };
+
     // Try multiple paths to find the icon (dev vs prod)
-    let resource_path = app.path().resource_dir().unwrap_or_default().join(icon_name);
+    let resource_path = app
+        .path()
+        .resource_dir()
+        .unwrap_or_default()
+        .join(icon_name);
     // Relative to src-tauri during dev
     let dev_path = std::path::Path::new("..").join("public").join(icon_name);
-    
+
     tracing::info!("Trying icon paths: {:?}, {:?}", resource_path, dev_path);
-    
+
     let bytes = std::fs::read(&resource_path)
         .or_else(|_| std::fs::read(&dev_path))
         .or_else(|_| {
@@ -362,7 +375,7 @@ fn set_theme_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
         .map_err(|e| format!("failed to read icon {}: {}", icon_name, e))?;
     let img = image::load_from_memory(&bytes)
         .map_err(|e| format!("failed to load image {}: {}", icon_name, e))?;
-    
+
     let resized = img.resize(256, 256, image::imageops::FilterType::Lanczos3);
     let rgba = resized.to_rgba8();
     let (width, height) = rgba.dimensions();
@@ -370,7 +383,8 @@ fn set_theme_icon(app: tauri::AppHandle, theme: String) -> Result<(), String> {
 
     let icon = tauri::image::Image::new_owned(pixels, width, height);
 
-    window.set_icon(icon)
+    window
+        .set_icon(icon)
         .map_err(|e| format!("failed to set window icon: {}", e))?;
 
     Ok(())
@@ -381,14 +395,12 @@ fn load_macro_script(path: String) -> Result<String, String> {
     if !path.ends_with(".mps") {
         return Err(format!("expected a .mps file, got: {}", path));
     }
-    std::fs::read_to_string(&path)
-        .map_err(|e| format!("failed to read {}: {}", path, e))
+    std::fs::read_to_string(&path).map_err(|e| format!("failed to read {}: {}", path, e))
 }
 
 #[tauri::command]
 fn save_macro_script(path: String, content: String) -> Result<(), String> {
-    std::fs::write(&path, content)
-        .map_err(|e| format!("failed to write {}: {}", path, e))
+    std::fs::write(&path, content).map_err(|e| format!("failed to write {}: {}", path, e))
 }
 
 #[tauri::command]
@@ -449,25 +461,22 @@ fn new_macro_script(app: tauri::AppHandle) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn duplicate_file(path: String) -> Result<String, String> {
-    let src  = std::path::PathBuf::from(&path);
-    let stem = src.file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("macro");
-    let ext  = src.extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("mpr");
+    let src = std::path::PathBuf::from(&path);
+    let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("macro");
+    let ext = src.extension().and_then(|e| e.to_str()).unwrap_or("mpr");
     let parent = src.parent().unwrap_or(std::path::Path::new("."));
 
     let mut i = 1;
     let dest = loop {
         let name = format!("{}_{}.{}", stem, i, ext);
         let candidate = parent.join(&name);
-        if !candidate.exists() { break candidate; }
+        if !candidate.exists() {
+            break candidate;
+        }
         i += 1;
     };
 
-    std::fs::copy(&src, &dest)
-        .map_err(|e| e.to_string())?;
+    std::fs::copy(&src, &dest).map_err(|e| e.to_string())?;
 
     Ok(dest.to_string_lossy().to_string())
 }
@@ -475,10 +484,10 @@ fn duplicate_file(path: String) -> Result<String, String> {
 #[tauri::command]
 fn list_macro_history(path: String) -> Result<Vec<String>, String> {
     let p = std::path::PathBuf::from(&path);
-    let history = macropad_core::list_history(&p)
-        .map_err(|e| e.to_string())?;
-    
-    Ok(history.into_iter()
+    let history = macropad_core::list_history(&p).map_err(|e| e.to_string())?;
+
+    Ok(history
+        .into_iter()
         .map(|p| p.to_string_lossy().to_string())
         .collect())
 }
@@ -487,27 +496,32 @@ fn list_macro_history(path: String) -> Result<Vec<String>, String> {
 fn restore_macro_version(backup_path: String, target_path: String) -> Result<(), String> {
     let b = std::path::PathBuf::from(&backup_path);
     let t = std::path::PathBuf::from(&target_path);
-    macropad_core::restore_history(&b, &t)
-        .map_err(|e| e.to_string())?;
+    macropad_core::restore_history(&b, &t).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 fn wrap_recording_in_script(macro_path: String) -> Result<String, String> {
     let macro_p = std::path::PathBuf::from(&macro_path);
-    let macro_name = macro_p.file_name()
+    let macro_name = macro_p
+        .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or("macro.mpr");
-    
+
     let script_path = macro_p.with_extension("mps");
-    
+
     let final_script_path = if script_path.exists() {
         let parent = script_path.parent().unwrap_or(std::path::Path::new("."));
-        let stem = script_path.file_stem().and_then(|s| s.to_str()).unwrap_or("script");
+        let stem = script_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("script");
         let mut i = 1;
         loop {
             let candidate = parent.join(format!("{}_{}.mps", stem, i));
-            if !candidate.exists() { break candidate; }
+            if !candidate.exists() {
+                break candidate;
+            }
             i += 1;
         }
     } else {
@@ -519,8 +533,7 @@ fn wrap_recording_in_script(macro_path: String) -> Result<String, String> {
         macro_name, macro_name
     );
 
-    std::fs::write(&final_script_path, content)
-        .map_err(|e| e.to_string())?;
+    std::fs::write(&final_script_path, content).map_err(|e| e.to_string())?;
 
     Ok(final_script_path.to_string_lossy().to_string())
 }
@@ -530,7 +543,9 @@ async fn set_hotkey(macro_path: String, hotkey_str: String) -> Result<(), String
     match send_ipc(IpcCommand::SetHotkey {
         macro_path: PathBuf::from(macro_path),
         hotkey_str,
-    }).await? {
+    })
+    .await?
+    {
         IpcResponse::Ok => Ok(()),
         IpcResponse::Error { message } => Err(message),
         _ => Err("unexpected response".into()),
@@ -573,7 +588,6 @@ async fn get_scheduled_tasks() -> Result<Vec<macropad_ipc::ScheduledTask>, Strin
     }
 }
 
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tracing_subscriber::fmt::init();
@@ -582,10 +596,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let config_dir = app.path().app_config_dir().unwrap_or_else(|_| PathBuf::from("."));
+            let config_dir = app
+                .path()
+                .app_config_dir()
+                .unwrap_or_else(|_| PathBuf::from("."));
             let config_path = config_dir.join("settings.toml");
             let config = macropad_core::storage::load_config(&config_path).unwrap_or_default();
-            
+
             app.manage(ConfigState {
                 config: Mutex::new(config),
                 path: config_path,
@@ -611,35 +628,46 @@ pub fn run() {
                 match sidecar.spawn() {
                     Ok((mut rx, _child)) => {
                         tracing::info!("GUI Backend: Sidecar spawned successfully.");
-                        
+
                         let ah = app_handle.clone();
                         tauri::async_runtime::spawn(async move {
                             use tauri::Emitter;
                             while let Some(event) = rx.recv().await {
-                                if let tauri_plugin_shell::process::CommandEvent::Stdout(line) = event {
+                                if let tauri_plugin_shell::process::CommandEvent::Stdout(line) =
+                                    event
+                                {
                                     let s = String::from_utf8_lossy(&line);
                                     if s.contains(">>REC_STOPPED:") {
-                                        tracing::info!("GUI Backend: Detected REC_STOPPED from daemon!");
-                                        
+                                        tracing::info!(
+                                            "GUI Backend: Detected REC_STOPPED from daemon!"
+                                        );
+
                                         let mut saved_path = None;
                                         if let Some(start) = s.find(">>REC_STOPPED:") {
                                             if let Some(end) = s[start..].find("<<") {
-                                                let content = &s[start + ">>REC_STOPPED:".len() .. start + end].trim();
+                                                let content = &s
+                                                    [start + ">>REC_STOPPED:".len()..start + end]
+                                                    .trim();
                                                 // Handle quoted path from {:?}
-                                                saved_path = Some(content.trim_matches('"').to_string());
+                                                saved_path =
+                                                    Some(content.trim_matches('"').to_string());
                                             }
                                         }
 
                                         // Unminimize and focus main window
                                         if let Some(window) = ah.get_webview_window("main") {
-                                            tracing::info!("GUI Backend: Restoring window focus...");
+                                            tracing::info!(
+                                                "GUI Backend: Restoring window focus..."
+                                            );
                                             let _ = window.unminimize();
                                             let _ = window.set_focus();
                                         } else {
                                             // Fallback to any window
-                                            if let Some(window) = ah.webview_windows().values().next() {
-                                               let _ = window.unminimize();
-                                               let _ = window.set_focus();
+                                            if let Some(window) =
+                                                ah.webview_windows().values().next()
+                                            {
+                                                let _ = window.unminimize();
+                                                let _ = window.set_focus();
                                             }
                                         }
                                         // Tell frontend recording ended with the path

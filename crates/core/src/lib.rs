@@ -5,6 +5,6 @@ pub mod recorder;
 pub mod storage;
 
 pub use models::*;
-pub use storage::{load, save, list_history, restore_history};
-pub use recorder::Recorder;
 pub use player::{play, Player, PlayerError};
+pub use recorder::Recorder;
+pub use storage::{list_history, load, restore_history, save};

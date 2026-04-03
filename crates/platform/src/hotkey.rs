@@ -14,7 +14,7 @@ pub enum HotkeyError {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hotkey {
     pub modifiers: Vec<Modifier>,
-    pub key:       String,
+    pub key: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -29,7 +29,7 @@ impl Hotkey {
     // parse "ctrl+shift+a" into a Hotkey struct
     pub fn parse(s: &str) -> Result<Self, HotkeyError> {
         let lower = s.to_lowercase();
-let parts: Vec<&str> = lower.split('+').collect();
+        let parts: Vec<&str> = lower.split('+').collect();
         if parts.is_empty() {
             return Err(HotkeyError::InvalidFormat(s.into()));
         }
@@ -39,10 +39,10 @@ let parts: Vec<&str> = lower.split('+').collect();
 
         for part in &parts {
             match *part {
-                "ctrl"  | "control" => modifiers.push(Modifier::Ctrl),
-                "alt"               => modifiers.push(Modifier::Alt),
-                "shift"             => modifiers.push(Modifier::Shift),
-                "meta"  | "win"     => modifiers.push(Modifier::Meta),
+                "ctrl" | "control" => modifiers.push(Modifier::Ctrl),
+                "alt" => modifiers.push(Modifier::Alt),
+                "shift" => modifiers.push(Modifier::Shift),
+                "meta" | "win" => modifiers.push(Modifier::Meta),
                 k => {
                     if key.is_some() {
                         return Err(HotkeyError::InvalidFormat(s.into()));
@@ -57,13 +57,14 @@ let parts: Vec<&str> = lower.split('+').collect();
     }
 
     pub fn to_display_string(&self) -> String {
-        let mut parts: Vec<String> = self.modifiers
+        let mut parts: Vec<String> = self
+            .modifiers
             .iter()
             .map(|m| match m {
-                Modifier::Ctrl  => "Ctrl".into(),
-                Modifier::Alt   => "Alt".into(),
+                Modifier::Ctrl => "Ctrl".into(),
+                Modifier::Alt => "Alt".into(),
                 Modifier::Shift => "Shift".into(),
-                Modifier::Meta  => "Win".into(),
+                Modifier::Meta => "Win".into(),
             })
             .collect();
         parts.push(self.key.to_uppercase());
@@ -83,11 +84,7 @@ impl HotkeyManager {
         }
     }
 
-    pub fn register(
-        &mut self,
-        hotkey: Hotkey,
-        macro_name: &str,
-    ) -> Result<(), HotkeyError> {
+    pub fn register(&mut self, hotkey: Hotkey, macro_name: &str) -> Result<(), HotkeyError> {
         // conflict check
         if let Some(existing) = self.bindings.get(&hotkey) {
             return Err(HotkeyError::Conflict(
@@ -112,10 +109,7 @@ impl HotkeyManager {
         self.bindings.iter().collect()
     }
 
-    pub fn check_conflicts(
-        &self,
-        hotkeys: &[(Hotkey, String)],
-    ) -> Vec<HotkeyError> {
+    pub fn check_conflicts(&self, hotkeys: &[(Hotkey, String)]) -> Vec<HotkeyError> {
         let mut errors = Vec::new();
         let mut seen: HashMap<&Hotkey, &str> = HashMap::new();
 

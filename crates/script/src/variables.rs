@@ -11,11 +11,14 @@ impl Scope {
 
         // built-in variables
         let now = Local::now();
-        vars.insert("date".into(),     now.format("%Y-%m-%d").to_string());
-        vars.insert("time".into(),     now.format("%H:%M:%S").to_string());
-        vars.insert("datetime".into(), now.format("%Y-%m-%d %H:%M:%S").to_string());
+        vars.insert("date".into(), now.format("%Y-%m-%d").to_string());
+        vars.insert("time".into(), now.format("%H:%M:%S").to_string());
+        vars.insert(
+            "datetime".into(),
+            now.format("%Y-%m-%d %H:%M:%S").to_string(),
+        );
         vars.insert("username".into(), whoami());
-        vars.insert("home".into(),     home_dir());
+        vars.insert("home".into(), home_dir());
 
         Self { vars }
     }
@@ -39,15 +42,14 @@ impl Scope {
         use crate::ast::{Expr, InterpolatedPart};
         match expr {
             Expr::Literal(s) => s.clone(),
-            Expr::Var(name)  => self.get(name).unwrap_or("").to_string(),
-            Expr::Interpolated(parts) => {
-                parts.iter().map(|part| match part {
+            Expr::Var(name) => self.get(name).unwrap_or("").to_string(),
+            Expr::Interpolated(parts) => parts
+                .iter()
+                .map(|part| match part {
                     InterpolatedPart::Literal(s) => s.clone(),
-                    InterpolatedPart::Var(name)  => {
-                        self.get(name).unwrap_or("").to_string()
-                    }
-                }).collect()
-            }
+                    InterpolatedPart::Var(name) => self.get(name).unwrap_or("").to_string(),
+                })
+                .collect(),
         }
     }
 }
