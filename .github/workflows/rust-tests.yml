@@ -35,6 +35,9 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
+    - name: Create Dummy GUI Dist
+      run: mkdir -p gui/dist
+
     - name: Build Sidecar (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
