@@ -72,7 +72,7 @@ It consists of three primary sections:
 ### <img src="docs/assets/mps_icon.png" width="24" align="center"> The MPS Format (`.mps`) (Coming Soon)
 
 > [!CAUTION]
-> **ROADMAP FEATURE**: The `.mps` engine is currently in the late stages of development. Native playback is supported via the CLI, but GUI-based orchestration and debugging are locked in the current release.
+> **ROADMAP FEATURE**: The `.mps` engine is currently in the late stages of development. Both CLI and GUI-based orchestration and debugging are locked in the current release.
 
 `.mps` is where MacroPad stops being a recorder and becomes a programmable automation engine.
 
