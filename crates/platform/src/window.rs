@@ -161,8 +161,7 @@ fn window_exists(title: &str, use_regex: bool) -> Result<bool, WindowError> {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     if use_regex {
-        let re = SimpleRegex::new(title)
-            .map_err(|e| WindowError::Platform(format!("invalid regex: {}", e)))?;
+        let re = regex_lite(title)?;
         return Ok(stdout.lines().any(|line| re.is_match(line)));
     }
 
