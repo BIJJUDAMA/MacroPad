@@ -228,10 +228,13 @@ pub async fn cmd_history(path: PathBuf) -> Result<(), ClientError> {
 }
 
 pub async fn cmd_run(
-    path: PathBuf,
-    dry_run: bool,
-    var: Vec<(String, String)>,
+    _path: PathBuf,
+    _dry_run: bool,
+    _var: Vec<(String, String)>,
 ) -> Result<(), ClientError> {
+    println!("[macropad] feature: scripting — status: COMING SOON");
+    println!("[macropad] note: the .mps execution engine is currently under development.");
+    /*
     if !path.exists() {
         eprintln!(
             "[macropad] error: file not found\n           resolved to: {}",
@@ -267,4 +270,6 @@ pub async fn cmd_run(
             Ok(())
         }
     }
+    */
+    Ok(())
 }
