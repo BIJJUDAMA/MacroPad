@@ -84,11 +84,11 @@ fn catmull_rom_points(
     pts
 }
 
-pub async fn play(
+pub fn play(
     rec: &MacropadRec,
     speed: Option<f64>,
     dry_run: bool,
-    abort_rx: watch::Receiver<bool>,
+    mut abort_rx: watch::Receiver<bool>,
     vars: Option<&HashMap<String, String>>,
 ) -> Result<(), PlayerError> {
     let speed = speed.unwrap_or(rec.playback.speed).max(0.01);
@@ -108,8 +108,7 @@ pub async fn play(
         if !dry_run {
             let query = platform::window::WindowQuery::new(target_window)
                 .timeout(rec.playback.wait_timeout_ms);
-            platform::window::wait_for_window(query)
-                .await
+            platform::window::wait_for_window_sync(query)
                 .map_err(|e| PlayerError::UnknownKey(format!("window wait failed: {}", e)))?;
         } else {
             debug!("would wait for window: {}", target_window);
@@ -150,7 +149,7 @@ pub async fn play(
                 if dry_run {
                     debug!("wait {}ms", actual_delay);
                 } else {
-                    tokio::time::sleep(Duration::from_millis(actual_delay)).await;
+                    std::thread::sleep(Duration::from_millis(actual_delay));
                 }
             }
 
@@ -171,7 +170,7 @@ pub async fn play(
                     speed,
                     vars,
                 };
-                execute_event(enigo, event, ctx).await?;
+                execute_event(enigo, event, ctx)?;
             }
         }
     }
@@ -205,7 +204,7 @@ struct PlaybackContext<'a> {
     vars: Option<&'a HashMap<String, String>>,
 }
 
-async fn execute_event(
+fn execute_event(
     enigo: &mut Enigo,
     event: &Event,
     ctx: PlaybackContext<'_>,
@@ -289,7 +288,7 @@ async fn execute_event(
                         }
 
                         if step_ms > 0 {
-                            tokio::time::sleep(Duration::from_millis(step_ms)).await;
+                            std::thread::sleep(Duration::from_millis(step_ms));
                         }
                     }
                 } else {
@@ -304,7 +303,7 @@ async fn execute_event(
                     let y = (from_y as f64 + (to_y - from_y) as f64 * t) as i32;
                     let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                     if step_ms > 0 {
-                        tokio::time::sleep(Duration::from_millis(step_ms)).await;
+                        std::thread::sleep(Duration::from_millis(step_ms));
                     }
                 }
             }
