@@ -6,12 +6,46 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  fmt:
+    name: Auto Format
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'style: apply cargo fmt')"
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref || github.ref_name }}
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+
+    - name: Run cargo fmt
+      run: cargo fmt --all
+
+    - name: Commit and push changes
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git add .
+          git commit -m "style: apply cargo fmt across workspace with me as the author"
+          git push
+        else
+          echo "No changes to commit"
+        fi
+
   test:
     name: Run Tests
+    needs: fmt
+    if: always() && !failure() && !cancelled()
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
