@@ -5,7 +5,6 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::oneshot;
-use macropad_core::recorder::consolidate_mouse_segments;
 use tracing::{info, error, debug, warn};
 use script::run_script;
 
@@ -178,9 +177,19 @@ async fn handle_command(cmd: IpcCommand, state: &SharedState, scheduler: &Arc<Sc
             }
 
             let state_clone = state.clone();
-            tokio::spawn(async move {
+            std::thread::spawn(move || {
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .expect("failed to build play runtime");
                 let (_player, abort_rx) = macropad_core::Player::new();
-                let result = macropad_core::play(&rec, speed, dry_run.unwrap_or(false), abort_rx, vars.as_ref()).await;
+                let result = rt.block_on(macropad_core::play(
+                    &rec,
+                    speed,
+                    dry_run.unwrap_or(false),
+                    abort_rx,
+                    vars.as_ref(),
+                ));
                 let mut s = state_clone.lock().unwrap();
                 s.last_result = Some(result.is_ok());
                 s.set_idle();

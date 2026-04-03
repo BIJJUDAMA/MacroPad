@@ -129,8 +129,12 @@ impl Scheduler {
                         let path = task.macro_path.clone();
                         let state_clone = Arc::clone(&state);
 
-                        tokio::spawn(async move {
-                            run_macro_task_background(path, state_clone).await;
+                        std::thread::spawn(move || {
+                            let rt = tokio::runtime::Builder::new_current_thread()
+                                .enable_all()
+                                .build()
+                                .expect("failed to build scheduler runtime");
+                            rt.block_on(run_macro_task_background(path, state_clone));
                         });
                     }
                 }
