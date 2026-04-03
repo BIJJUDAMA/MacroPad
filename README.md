@@ -14,7 +14,6 @@
 Explore the high-fidelity design and programmable capabilities of Macropad:
 - **[Architecture Overview](docs/ARCHITECTURE.md)**: Process isolation, OS-level hooks, and IPC protocol design.
 - **[Scripting Guide](docs/SCRIPTING.md)**: Deep dive into the `.mps` language, variables, and execution rules.
-- **[Git Workflow](docs/GIT_WORKFLOW.md)**: Procedures for managing multiple remotes and version tagging.
 
 ---
 
