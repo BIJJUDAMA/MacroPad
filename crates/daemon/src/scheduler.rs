@@ -116,7 +116,7 @@ impl Scheduler {
                                 && current_minute == *at_minute
                                 && now.second() == 0
                         }
-                        Schedule::Interval { every_secs } => current_secs.is_multiple_of(every_secs),
+                        Schedule::Interval { every_secs } => current_secs.is_multiple_of(*every_secs),
                     };
 
                     if should_run {
