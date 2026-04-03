@@ -60,11 +60,11 @@ async fn load_macro_info(path: &str) -> Result<MacroInfo, String> {
         for line in lines.iter().take(20) {
             let trimmed = line.trim();
             if trimmed.starts_with("// @name:") {
-                if let Some(val) = trimmed.splitn(2, ':').nth(1) {
+                if let Some(val) = trimmed.split_once(':').map(|x| x.1) {
                     name = val.trim().trim_matches('"').to_string();
                 }
             } else if trimmed.starts_with("// @tags:") {
-                if let Some(val) = trimmed.splitn(2, ':').nth(1) {
+                if let Some(val) = trimmed.split_once(':').map(|x| x.1) {
                     let cleaned = val.trim().trim_matches(|c| c == '[' || c == ']');
                     tags = cleaned
                         .split(',')

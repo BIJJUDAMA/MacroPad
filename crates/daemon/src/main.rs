@@ -154,7 +154,7 @@ async fn trigger_macro_background(path: PathBuf, state: SharedState) {
         s.set_playing(name);
     }
 
-    let is_script = path.extension().map_or(false, |e| e == "mps");
+    let is_script = path.extension().is_some_and(|e| e == "mps");
     let result = if is_script {
         run_script(&path, false, None)
             .await
