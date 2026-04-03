@@ -214,10 +214,12 @@ fn activate_window(title: &str, _use_regex: bool) -> Result<(), WindowError> {
 
 // minimal regex matcher — avoids pulling in the regex crate
 // supports: literal match, ^ $ anchors, .* wildcard
+#[cfg(any(windows, target_os = "linux"))]
 struct SimpleRegex {
     pattern: String,
 }
 
+#[cfg(any(windows, target_os = "linux"))]
 impl SimpleRegex {
     fn new(pattern: &str) -> Result<Self, String> {
         Ok(Self { pattern: pattern.into() })
@@ -242,6 +244,7 @@ impl SimpleRegex {
     }
 }
 
+#[cfg(any(windows, target_os = "linux"))]
 fn regex_lite(pattern: &str) -> Result<SimpleRegex, WindowError> {
     SimpleRegex::new(pattern)
         .map_err(|e| WindowError::Platform(format!("invalid regex: {}", e)))
