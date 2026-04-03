@@ -88,7 +88,7 @@ pub fn play(
     rec: &MacropadRec,
     speed: Option<f64>,
     dry_run: bool,
-    mut abort_rx: watch::Receiver<bool>,
+    abort_rx: watch::Receiver<bool>,
     vars: Option<&HashMap<String, String>>,
 ) -> Result<(), PlayerError> {
     let speed = speed.unwrap_or(rec.playback.speed).max(0.01);
