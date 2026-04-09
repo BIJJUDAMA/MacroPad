@@ -14,6 +14,7 @@
 Explore the high-fidelity design and programmable capabilities of Macropad:
 - **[Architecture Overview](docs/ARCHITECTURE.md)**: Process isolation, OS-level hooks, and IPC protocol design.
 - **[Scripting Guide](docs/SCRIPTING.md)**: Deep dive into the `.mps` language, variables, and execution rules.
+- **[Contributing Guide](CONTRIBUTING.md)**: Standards for code, testing, and pull request submission.
 
 ---
 
@@ -122,7 +123,7 @@ A dedicated `tests/` package at the workspace root manages complex end-to-end sc
 
 **Continuous Integration**
 
-Every commit and pull request triggers an automated GitHub Actions pipeline on Windows. The CI environment enforces a strict quality gate:
+Every commit and pull request triggers an automated GitHub Actions pipeline on Windows. For detailed contribution guidelines and code standards, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 - **Workspace Tests**: Executes the full suite of unit and integration tests.
 - **Static Analysis**: Runs Clippy for deep code quality inspections and performance optimization suggestions.
 - **Format Enforcement**: Validates that all code adheres to the project's formatting standards via `rustfmt`.
