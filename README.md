@@ -33,6 +33,45 @@ To get there, the architecture splits into two independent processes: a backgrou
 3. **Record**: Click the **Record** button in the GUI, perform your sequence of keyboard/mouse actions, and click **Stop**.
 4. **Play**: Assign a Global Hotkey or simply click **Play** to replay your macro with microsecond precision.
 
+---
+
+## Local Development
+
+To run this project in development, you **must build the sidecar (the Rust daemon) yourself first**. 
+
+The Tauri `dev` command manages the frontend and the GUI wrapper, but it expects the background daemon to already exist with a specific platform-triple suffix in the `gui/src-tauri/` directory.
+
+### Setup Instructions
+
+1.  **Build the Sidecar (Mandatory First Step):**
+    Open a terminal in the root of the project and run the platform-appropriate script. This builds the daemon and copies it to the correct location with the necessary platform suffix (e.g., `daemon-x86_64-pc-windows-msvc.exe`).
+
+    *   **Windows (PowerShell):**
+        ```powershell
+        ./scripts/build-sidecar.ps1
+        ```
+    *   **Linux/macOS (Bash):**
+        ```bash
+        chmod +x ./scripts/build-sidecar.sh
+        ./scripts/build-sidecar.sh
+        ```
+
+2.  **Install Frontend Dependencies:**
+    Navigate to the `gui` directory and install the Node.js packages.
+    ```bash
+    cd gui
+    npm install
+    ```
+
+3.  **Run the Application in Dev Mode:**
+    While inside the `gui` folder, start the Tauri development server. This will launch the Vite frontend and the Tauri Rust runner simultaneously.
+    ```bash
+    npm run tauri dev
+    ```
+
+### Why you have to build it yourself:
+The `tauri.conf.json` defines `daemon` as an `externalBin`. Tauri requires these binaries to be present at compile-time with their target triple in the filename. The provided scripts automate the `cargo build`, renaming, and moving processes required for the sidecar to be recognized by the Tauri bundler.
+
 
 
 ---
